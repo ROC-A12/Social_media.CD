@@ -6,7 +6,7 @@ class Database {
     private $dbname = DB_NAME;
     private $charset = DB_CHARSET;
     
-    private $pdo;
+    private $conn;
     private $error;
     
     public function __construct() {
@@ -14,66 +14,70 @@ class Database {
     }
     
     private function connect() {
-        $dsn = "mysql:host={$this->host};dbname={$this->dbname};charset={$this->charset}";
+        $this->conn = new mysqli($this->host, $this->user, $this->pass, $this->dbname);
         
-        try {
-            $this->pdo = new PDO($dsn, $this->user, $this->pass);
-            $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-            $this->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-        } catch(PDOException $e) {
-            $this->error = "Database connectie mislukt: " . $e->getMessage();
-            error_log($this->error); // Log voor debugging
+        if ($this->conn->connect_error) {
+            $this->error = "Database connectie mislukt: " . $this->conn->connect_error;
+            error_log($this->error);
             return false;
         }
+        
+        $this->conn->set_charset($this->charset);
         return true;
     }
     
     public function query($sql, $params = []) {
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute($params);
-            return $stmt;
-        } catch(PDOException $e) {
-            error_log("Query fout: " . $e->getMessage() . " - SQL: " . $sql);
-            return false;
+        $stmt = $this->conn->prepare($sql);
+        if ($params) {
+            $types = '';
+            foreach ($params as $param) {
+                if (is_int($param)) $types .= 'i';
+                elseif (is_float($param)) $types .= 'd';
+                else $types .= 's';
+            }
+            $stmt->bind_param($types, ...$params);
         }
+        $stmt->execute();
+        return $stmt;
+    }
+    public function prepare($sql) {
+        return $this->conn->prepare($sql);
     }
     
     public function fetch($sql, $params = []) {
         $stmt = $this->query($sql, $params);
-        return $stmt ? $stmt->fetch() : false;
+        return $stmt ? $stmt->get_result()->fetch_assoc() : false;
     }
     
     public function fetchAll($sql, $params = []) {
         $stmt = $this->query($sql, $params);
-        return $stmt ? $stmt->fetchAll() : false;
+        return $stmt ? $stmt->get_result()->fetch_all(MYSQLI_ASSOC) : false;
     }
     
     public function insert($sql, $params = []) {
         $stmt = $this->query($sql, $params);
-        return $stmt ? $this->pdo->lastInsertId() : false;
+        return $stmt ? $this->conn->insert_id : false;
     }
     
     public function execute($sql, $params = []) {
         $stmt = $this->query($sql, $params);
-        return $stmt ? $stmt->rowCount() : false;
+        return $stmt ? $stmt->affected_rows : false;
     }
     
     public function lastInsertId() {
-        return $this->pdo->lastInsertId();
+        return $this->conn->insert_id;
     }
     
     public function beginTransaction() {
-        return $this->pdo->beginTransaction();
+        return $this->conn->begin_transaction();
     }
     
     public function commit() {
-        return $this->pdo->commit();
+        return $this->conn->commit();
     }
     
     public function rollback() {
-        return $this->pdo->rollback();
+        return $this->conn->rollback();
     }
     
     public function getError() {

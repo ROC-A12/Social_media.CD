@@ -2,7 +2,7 @@
 session_start();
 
 // Jouw databasegegevens
-define('BASE_URL', 'http://localhost/social-media-site/');
+define('BASE_URL', 'http://localhost/Social_media.CD/');
 define('DB_HOST', 'localhost');
 define('DB_USER', 'BDTestUser1');
 define('DB_PASS', 'User1WW#43');
