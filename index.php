@@ -4,7 +4,7 @@ require_once 'includes/database.php';
 require_once 'includes/auth.php';
 
 checkLogin();
-
+//hoi
 $db = new Database();
 $user_id = $_SESSION['user_id'];
 
