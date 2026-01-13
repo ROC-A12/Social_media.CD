@@ -32,7 +32,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['email'] = $user['email'];
-                $_SESSION['is_admin'] = ($user['role'] == 'admin') ? 1 : 0;
+                $_SESSION['is_admin'] = ($user['role'] === 'admin') ? 1 : 0;
                 $_SESSION['profile_pic'] = $user['profile_picture'] ?: 'default.png';
                 
                 header("Location: index.php");

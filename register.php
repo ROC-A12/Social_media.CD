@@ -34,8 +34,9 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
         
         // Gebruiker toevoegen
-        $stmt = $db->prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, 'user')");
-        $stmt->bind_param("sss", $username, $email, $hashed_password);
+        $role = 'user';
+        $stmt = $db->prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssss", $username, $email, $hashed_password, $role);
         
         if($stmt->execute()) {
             $_SESSION['success'] = "Registration successful! Please login.";

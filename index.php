@@ -4,7 +4,7 @@ require_once 'includes/database.php';
 require_once 'includes/auth.php';
 
 checkLogin();
-//hoi
+
 $db = new Database();
 $user_id = $_SESSION['user_id'];
 
@@ -12,13 +12,12 @@ $user_id = $_SESSION['user_id'];
 $stmt = $db->prepare("
     SELECT posts.*, users.username, users.profile_picture,
            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
-           (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id) as comment_count,
            EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
     FROM posts 
     JOIN users ON posts.user_id = users.id
-    WHERE posts.user_id IN (
-        SELECT following_id FROM followers WHERE follower_id = ?
-    ) OR posts.user_id = ?
+    WHERE posts.posts_id IS NULL AND (posts.user_id IN (
+        SELECT following_id FROM follows WHERE follower_id = ?
+    ) OR posts.user_id = ?)
     ORDER BY posts.created_at DESC
     LIMIT 20
 ");
@@ -34,7 +33,7 @@ $posts = $stmt->get_result();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home - Social Media</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <?php include 'includes/header.php'; ?>
@@ -45,7 +44,7 @@ $posts = $stmt->get_result();
             <div class="col-md-3">
                 <div class="card mb-3">
                     <div class="card-body text-center">
-                        <img src="assets/uploads/profile_pictures/<?php echo $_SESSION['profile_pic']; ?>" 
+                        <img src="uploads/profile_pictures/<?php echo $_SESSION['profile_pic']; ?>" 
                              class="rounded-circle mb-2" width="100" height="100">
                         <h5><?php echo htmlspecialchars($_SESSION['username']); ?></h5>
                         <a href="profile.php?id=<?php echo $user_id; ?>" class="btn btn-sm btn-outline-primary">View Profile</a>
@@ -59,19 +58,22 @@ $posts = $stmt->get_result();
                     <div class="card-body">
                         <!-- Suggesties voor gebruikers om te volgen -->
                         <?php
-                        $suggestions = $db->query("
+                        $suggestions_stmt = $db->prepare("
                             SELECT users.id, users.username, users.profile_picture 
                             FROM users 
-                            WHERE users.id != $user_id 
+                            WHERE users.id != ? 
                             AND users.id NOT IN (
-                                SELECT following_id FROM followers WHERE follower_id = $user_id
+                                SELECT following_id FROM follows WHERE follower_id = ?
                             )
                             LIMIT 5
                         ");
+                        $suggestions_stmt->bind_param("ii", $user_id, $user_id);
+                        $suggestions_stmt->execute();
+                        $suggestions = $suggestions_stmt->get_result();
                         
                         while($user = $suggestions->fetch_assoc()): ?>
                             <div class="d-flex align-items-center mb-2">
-                                <img src="assets/uploads/profile_pictures/<?php echo $user['profile_picture']; ?>" 
+                                <img src="uploads/profile_pictures/<?php echo $user['profile_picture']; ?>" 
                                      class="rounded-circle me-2" width="30" height="30">
                                 <div class="flex-grow-1">
                                     <strong><?php echo htmlspecialchars($user['username']); ?></strong>
@@ -103,7 +105,7 @@ $posts = $stmt->get_result();
                     <div class="card mb-3">
                         <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
-                                <img src="assets/uploads/profile_pictures/<?php echo $post['profile_picture']; ?>" 
+                                <img src="uploads/profile_pictures/<?php echo $post['profile_picture']; ?>" 
                                      class="rounded-circle me-2" width="40" height="40">
                                 <div>
                                     <h6 class="mb-0"><?php echo htmlspecialchars($post['username']); ?></h6>
@@ -113,11 +115,7 @@ $posts = $stmt->get_result();
                             
                             <p><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
                             
-                            <?php if($post['image_url']): ?>
-                                <img src="assets/uploads/posts/<?php echo $post['image_url']; ?>" class="img-fluid mb-3">
-                            <?php endif; ?>
-                            
-                            <div class="d-flex justify-content-between">
+                            <div class="d-flex justify-content-between mt-3">
                                 <form action="like.php" method="POST" class="d-inline">
                                     <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                                     <button type="submit" class="btn btn-sm <?php echo $post['user_liked'] ? 'btn-danger' : 'btn-outline-danger'; ?>">
@@ -126,7 +124,7 @@ $posts = $stmt->get_result();
                                 </form>
                                 
                                 <a href="post.php?id=<?php echo $post['id']; ?>" class="btn btn-sm btn-outline-primary">
-                                    Comment (<?php echo $post['comment_count']; ?>)
+                                    Reply
                                 </a>
                             </div>
                         </div>

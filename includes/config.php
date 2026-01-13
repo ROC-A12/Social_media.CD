@@ -1,6 +1,6 @@
 <?php
 session_start();
-
+//hoi
 // Jouw databasegegevens
 define('BASE_URL', 'http://localhost/Social_media.CD/');
 define('DB_HOST', 'localhost');
@@ -10,8 +10,8 @@ define('DB_NAME', 'social_media');
 define('DB_CHARSET', 'utf8mb4');
 
 // Beveiliging - foutmeldingen uitzetten in productie
-ini_set('display_errors', 0);
-error_reporting(0);
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
 // Database connectie functie
 function getDBConnection() {
@@ -30,17 +30,5 @@ function getDBConnection() {
         error_log("Database connectie fout: " . $e->getMessage());
         die("Er is een database fout opgetreden. Probeer het later opnieuw.");
     }
-}
-
-// CSRF Token beveiliging
-function generateCSRFToken() {
-    if (!isset($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
-    return $_SESSION['csrf_token'];
-}
-
-function validateCSRFToken($token) {
-    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 ?>
