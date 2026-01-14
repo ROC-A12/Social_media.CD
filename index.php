@@ -44,7 +44,7 @@ $posts = $stmt->get_result();
             <div class="col-md-3">
                 <div class="card mb-3">
                     <div class="card-body text-center">
-                        <img src="uploads/profile_pictures/<?php echo $_SESSION['profile_pic']; ?>" 
+                        <img src="assets/uploads/profile_pictures/<?php echo $_SESSION['profile_pic'] ?: 'default.png'; ?>" 
                              class="rounded-circle mb-2" width="100" height="100">
                         <h5><?php echo htmlspecialchars($_SESSION['username']); ?></h5>
                         <a href="profile.php?id=<?php echo $user_id; ?>" class="btn btn-sm btn-outline-primary">View Profile</a>
@@ -73,7 +73,7 @@ $posts = $stmt->get_result();
                         
                         while($user = $suggestions->fetch_assoc()): ?>
                             <div class="d-flex align-items-center mb-2">
-                                <img src="uploads/profile_pictures/<?php echo $user['profile_picture']; ?>" 
+                                <img src="assets/uploads/profile_pictures/<?php echo $user['profile_picture'] ?: 'default.png'; ?>" 
                                      class="rounded-circle me-2" width="30" height="30">
                                 <div class="flex-grow-1">
                                     <strong><?php echo htmlspecialchars($user['username']); ?></strong>
@@ -105,7 +105,7 @@ $posts = $stmt->get_result();
                     <div class="card mb-3">
                         <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
-                                <img src="uploads/profile_pictures/<?php echo $post['profile_picture']; ?>" 
+                                <img src="assets/uploads/profile_pictures/<?php echo $post['profile_picture'] ?: 'default.png'; ?>" 
                                      class="rounded-circle me-2" width="40" height="40">
                                 <div>
                                     <h6 class="mb-0"><?php echo htmlspecialchars($post['username']); ?></h6>

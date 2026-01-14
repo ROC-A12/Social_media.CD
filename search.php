@@ -42,7 +42,7 @@ if (!empty($query)) {
             <?php while($user = $users->fetch_assoc()): ?>
                 <div class="card mb-2">
                     <div class="card-body d-flex align-items-center">
-                        <img src="assets/uploads/profile_pictures/<?php echo $user['profile_picture']; ?>" class="rounded-circle me-3" width="50" height="50">
+                        <img src="assets/uploads/profile_pictures/<?php echo $user['profile_picture'] ?: 'default.png'; ?>" class="rounded-circle me-3" width="50" height="50">
                         <div>
                             <h6><?php echo htmlspecialchars($user['username']); ?></h6>
                             <a href="profile.php?id=<?php echo $user['id']; ?>" class="btn btn-sm btn-primary">View Profile</a>
