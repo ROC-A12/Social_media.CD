@@ -5,7 +5,7 @@ require_once 'includes/auth.php';
 
 checkLogin();
 
-$db = new Database();
+$db = getDB();
 $query = isset($_GET['q']) ? trim($_GET['q']) : '';
 
 $users = [];

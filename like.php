@@ -5,7 +5,7 @@ require_once 'includes/auth.php';
 
 checkLogin();
 
-$db = new Database();
+$db = getDB();
 $user_id = $_SESSION['user_id'];
 $post_id = (int)$_POST['post_id'];
 

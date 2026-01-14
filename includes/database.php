@@ -19,15 +19,32 @@ class Database {
         if ($this->conn->connect_error) {
             $this->error = "Database connectie mislukt: " . $this->conn->connect_error;
             error_log($this->error);
-            return false;
+            die("Database connectie mislukt. Controleer uw instellingen.");
         }
         
         $this->conn->set_charset($this->charset);
-        return true;
+        $this->conn->query("SET sql_mode=''");
+    }
+    
+    public function getConnection() {
+        return $this->conn;
+    }
+    
+    public function prepare($sql) {
+        $stmt = $this->conn->prepare($sql);
+        if (!$stmt) {
+            error_log("Prepare fout: " . $this->conn->error . " SQL: " . $sql);
+            die("Database query fout.");
+        }
+        return $stmt;
     }
     
     public function query($sql, $params = []) {
         $stmt = $this->conn->prepare($sql);
+        if (!$stmt) {
+            error_log("Query fout: " . $this->conn->error);
+            return false;
+        }
         if ($params) {
             $types = '';
             foreach ($params as $param) {
@@ -39,9 +56,6 @@ class Database {
         }
         $stmt->execute();
         return $stmt;
-    }
-    public function prepare($sql) {
-        return $this->conn->prepare($sql);
     }
     
     public function fetch($sql, $params = []) {

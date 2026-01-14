@@ -5,7 +5,7 @@ require_once 'includes/auth.php';
 
 checkLogin();
 
-$db = new Database();
+$db = getDB();
 $user_id = $_SESSION['user_id'];
 
 // Haal posts op van gebruikers die je volgt
@@ -59,7 +59,8 @@ $posts = $stmt->get_result();
                         <!-- Suggesties voor gebruikers om te volgen -->
                         <?php
                         $suggestions_stmt = $db->prepare("
-                            SELECT users.id, users.username, users.profile_picture 
+                            SELECT users.id, users.username, users.profile_picture,
+                                   EXISTS(SELECT 1 FROM follows WHERE follower_id = ? AND following_id = users.id) as is_following
                             FROM users 
                             WHERE users.id != ? 
                             AND users.id NOT IN (
@@ -67,7 +68,7 @@ $posts = $stmt->get_result();
                             )
                             LIMIT 5
                         ");
-                        $suggestions_stmt->bind_param("ii", $user_id, $user_id);
+                        $suggestions_stmt->bind_param("iii", $user_id, $user_id, $user_id);
                         $suggestions_stmt->execute();
                         $suggestions = $suggestions_stmt->get_result();
                         
@@ -78,7 +79,9 @@ $posts = $stmt->get_result();
                                 <div class="flex-grow-1">
                                     <strong><?php echo htmlspecialchars($user['username']); ?></strong>
                                 </div>
-                                <a href="follow.php?user_id=<?php echo $user['id']; ?>" class="btn btn-sm btn-primary">Follow</a>
+                                <a href="follow.php?user_id=<?php echo $user['id']; ?>" class="btn btn-sm <?php echo $user['is_following'] ? 'btn-danger' : 'btn-primary'; ?>">
+                                    <?php echo $user['is_following'] ? 'Unfollow' : 'Follow'; ?>
+                                </a>
                             </div>
                         <?php endwhile; ?>
                     </div>
@@ -114,6 +117,10 @@ $posts = $stmt->get_result();
                             </div>
                             
                             <p><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
+                            
+                            <?php if(!empty($post['image'])): ?>
+                                <img src="assets/uploads/posts/<?php echo htmlspecialchars($post['image']); ?>" class="img-fluid mt-3 mb-3" style="max-height: 400px; width: auto;">
+                            <?php endif; ?>
                             
                             <div class="d-flex justify-content-between mt-3">
                                 <form action="like.php" method="POST" class="d-inline">

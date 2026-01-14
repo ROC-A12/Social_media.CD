@@ -5,7 +5,7 @@ require_once 'includes/auth.php';
 
 checkLogin();
 
-$db = new Database();
+$db = getDB();
 
 $user_id = isset($_GET['id']) ? (int)$_GET['id'] : $_SESSION['user_id'];
 

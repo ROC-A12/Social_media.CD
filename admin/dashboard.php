@@ -9,7 +9,7 @@ if(!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
     exit();
 }
 
-$db = new Database();
+$db = getDB();
 
 // Statistieken
 $total_users = $db->query("SELECT COUNT(*) as count FROM users")->fetch_assoc()['count'];

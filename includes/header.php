@@ -23,7 +23,7 @@ if(!isset($_SESSION['user_id']) && basename($_SERVER['PHP_SELF']) != 'login.php'
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/style.css">
     
     <!-- CSRF Token voor formulieren -->
     <meta name="csrf-token" content="<?php echo generateCSRFToken(); ?>">

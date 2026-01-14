@@ -2,7 +2,7 @@
 require_once 'includes/config.php';
 require_once 'includes/database.php';
 
-$db = new Database();
+$db = getDB();
 
 if($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = trim($_POST['username']);
