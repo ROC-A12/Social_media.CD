@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt->execute();
     }
 
-    header("Location: index.php");
+    header("Location: profile.php?id=" . $user_id);
     exit();
 }
 ?>
