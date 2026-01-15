@@ -47,6 +47,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $user_id == $_SESSION['user_id'] && 
     }
 }
 
+// Handle bio update
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && $user_id == $_SESSION['user_id'] && isset($_POST['bio'])) {
+    if (!verifyCSRFToken($_POST['csrf_token'])) {
+        die("CSRF token invalid");
+    }
+
+    $bio = trim($_POST['bio']);
+    $update_stmt = $db->prepare("UPDATE users SET text = ? WHERE id = ?");
+    $update_stmt->bind_param("si", $bio, $user_id);
+    $update_stmt->execute();
+    header("Location: profile.php?id=" . $user_id);
+    exit();
+}
+
 // Follow logica & Tellers
 $is_following = false;
 $has_pending_request = false;
@@ -118,7 +132,7 @@ if ($can_view_posts) {
                             </button>
                         </div>
 
-                        <p class="text-muted small"><?php echo htmlspecialchars($user['bio'] ?? ''); ?></p>
+                        <p class="text-muted small"><?php echo htmlspecialchars($user['text'] ?? ''); ?></p>
                         
                         <?php if ($user_id != $_SESSION['user_id']): ?>
                             <?php if($has_pending_request): ?>
@@ -169,6 +183,17 @@ if ($can_view_posts) {
                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                             <input type="file" name="profile_picture" class="form-control form-control-sm mb-2" required>
                             <button type="submit" class="btn btn-sm btn-primary w-100">Update</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6>Bio wijzigen</h6>
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                            <textarea name="bio" class="form-control form-control-sm mb-2" rows="3" placeholder="Vertel iets over jezelf..."><?php echo htmlspecialchars($user['text'] ?? ''); ?></textarea>
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Update Bio</button>
                         </form>
                     </div>
                 </div>
