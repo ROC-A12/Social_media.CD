@@ -47,13 +47,23 @@ $comments = $comments_stmt->get_result();
     <div class="container mt-4">
         <div class="card">
             <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <img src="assets/uploads/profile_pictures/<?php echo $post['profile_picture'] ?: 'default.png'; ?>" 
-                         class="rounded-circle me-2" width="40" height="40">
-                    <div>
-                        <h6 class="mb-0"><?php echo htmlspecialchars($post['username']); ?></h6>
-                        <small class="text-muted"><?php echo date('F j, Y, g:i a', strtotime($post['created_at'])); ?></small>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center">
+                        <img src="assets/uploads/profile_pictures/<?php echo $post['profile_picture'] ?: 'default.png'; ?>" 
+                             class="rounded-circle me-2" width="40" height="40">
+                        <div>
+                            <h6 class="mb-0"><?php echo htmlspecialchars($post['username']); ?></h6>
+                            <small class="text-muted"><?php echo date('F j, Y, g:i a', strtotime($post['created_at'])); ?></small>
+                        </div>
                     </div>
+                    <?php if($post['user_id'] == $user_id): ?>
+                        <form action="delete_post.php" method="POST" class="d-inline">
+                            <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je zeker dat je deze post wilt verwijderen?');">
+                                Delete
+                            </button>
+                        </form>
+                    <?php endif; ?>
                 </div>
                 <p><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
                 <?php if(!empty($post['image'])): ?>
@@ -73,13 +83,23 @@ $comments = $comments_stmt->get_result();
             <?php while($comment = $comments->fetch_assoc()): ?>
                 <div class="card mb-2">
                     <div class="card-body">
-                        <div class="d-flex align-items-center mb-2">
-                            <img src="assets/uploads/profile_pictures/<?php echo $comment['profile_picture'] ?: 'default.png'; ?>" 
-                                 class="rounded-circle me-2" width="30" height="30">
-                            <div>
-                                <strong><?php echo htmlspecialchars($comment['username']); ?></strong>
-                                <small class="text-muted ms-2"><?php echo date('F j, Y, g:i a', strtotime($comment['created_at'])); ?></small>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center">
+                                <img src="assets/uploads/profile_pictures/<?php echo $comment['profile_picture'] ?: 'default.png'; ?>" 
+                                     class="rounded-circle me-2" width="30" height="30">
+                                <div>
+                                    <strong><?php echo htmlspecialchars($comment['username']); ?></strong>
+                                    <small class="text-muted ms-2"><?php echo date('F j, Y, g:i a', strtotime($comment['created_at'])); ?></small>
+                                </div>
                             </div>
+                            <?php if($comment['user_id'] == $user_id): ?>
+                                <form action="delete_post.php" method="POST" class="d-inline">
+                                    <input type="hidden" name="post_id" value="<?php echo $comment['id']; ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je zeker dat je deze reply wilt verwijderen?');">
+                                        Delete
+                                    </button>
+                                </form>
+                            <?php endif; ?>
                         </div>
                         <p><?php echo nl2br(htmlspecialchars($comment['content'])); ?></p>
                         <?php if(!empty($comment['image'])): ?>

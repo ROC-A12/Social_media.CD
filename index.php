@@ -107,13 +107,23 @@ $posts = $stmt->get_result();
                 <?php while($post = $posts->fetch_assoc()): ?>
                     <div class="card mb-3">
                         <div class="card-body">
-                            <div class="d-flex align-items-center mb-3">
-                                <img src="assets/uploads/profile_pictures/<?php echo $post['profile_picture'] ?: 'default.png'; ?>" 
-                                     class="rounded-circle me-2" width="40" height="40">
-                                <div>
-                                    <h6 class="mb-0"><?php echo htmlspecialchars($post['username']); ?></h6>
-                                    <small class="text-muted"><?php echo date('F j, Y, g:i a', strtotime($post['created_at'])); ?></small>
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="d-flex align-items-center">
+                                    <img src="assets/uploads/profile_pictures/<?php echo $post['profile_picture'] ?: 'default.png'; ?>" 
+                                         class="rounded-circle me-2" width="40" height="40">
+                                    <div>
+                                        <h6 class="mb-0"><?php echo htmlspecialchars($post['username']); ?></h6>
+                                        <small class="text-muted"><?php echo date('F j, Y, g:i a', strtotime($post['created_at'])); ?></small>
+                                    </div>
                                 </div>
+                                <?php if($post['user_id'] == $user_id): ?>
+                                    <form action="delete_post.php" method="POST" class="d-inline">
+                                        <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je zeker dat je deze post wilt verwijderen?');">
+                                            Delete
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
                             </div>
                             
                             <p><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
