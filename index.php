@@ -97,7 +97,7 @@ $posts = $stmt->get_result();
                                         <strong><?php echo htmlspecialchars($user['username']); ?></strong>
                                     </a>
                                 </div>
-                                <a href="?follow=<?php echo $user['id']; ?>" class="btn btn-sm btn-primary">Follow</a>
+                                <a href="follow.php?user_id=<?php echo $user['id']; ?>" class="btn btn-sm btn-primary">Follow</a>
                             </div>
                         <?php endwhile; ?>
                     </div>
@@ -125,9 +125,8 @@ $posts = $stmt->get_result();
                                         </div>
                                     </div>
                                     <?php if($post['user_id'] == $user_id): ?>
-                                        <form action="" method="POST" class="d-inline">
+                                        <form action="delete_post.php" method="POST" class="d-inline">
                                             <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
-                                            <input type="hidden" name="delete" value="1">
                                             <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je zeker dat je deze post wilt verwijderen?');">
                                                 Delete
                                             </button>
@@ -142,7 +141,7 @@ $posts = $stmt->get_result();
                                 <?php endif; ?>
                                 
                                 <div class="d-flex justify-content-between mt-3">
-                                    <form action="" method="POST" class="d-inline">
+                                    <form action="like.php" method="POST" class="d-inline">
                                         <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                                         <button type="submit" class="btn btn-sm <?php echo $post['user_liked'] ? 'btn-danger' : 'btn-outline-danger'; ?>">
                                             Like (<?php echo $post['like_count']; ?>)
