@@ -1,13 +1,13 @@
 <?php
 session_start();
-
+//naar casper
 // Jouw databasegegevens
-define('BASE_URL', 'http://localhost/social-media-site/');
+define('BASE_URL', 'http://localhost/Social_media.CD/');
 define('DB_HOST', 'localhost');
-define('DB_USER', 'BDTestUser1');
-define('DB_PASS', 'User1WW#43');
+define('DB_USER', 'root');
+define('DB_PASS', '');
 define('DB_NAME', 'social_media');
-define('DB_CHARSET', 'utf8mb4');;
+define('DB_CHARSET', 'utf8mb4');
 
 // Beveiliging - foutmeldingen uitzetten in productie
 ini_set('display_errors', 1);
