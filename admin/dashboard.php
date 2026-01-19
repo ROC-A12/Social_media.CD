@@ -1,7 +1,5 @@
 <?php
-require_once '../includes/config.php';
-require_once '../includes/database.php';
-require_once '../includes/auth.php';
+require_once '../includes/functies.php';
 
 // Check admin rechten
 if(!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {

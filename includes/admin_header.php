@@ -1,6 +1,5 @@
 <?php
-require_once 'config.php';
-require_once 'database.php';
+require_once 'functies.php';
 
 // Controleer of gebruiker is ingelogd en admin is
 if(!isset($_SESSION['user_id']) || !isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {

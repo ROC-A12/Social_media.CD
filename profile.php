@@ -1,9 +1,65 @@
 <?php
-require_once 'includes/config.php';
-require_once 'includes/database.php';
-require_once 'includes/auth.php';
+require_once 'includes/functies.php';
 
 checkLogin();
+
+// Handle delete action
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['post_id']) && isset($_POST['delete'])) {
+    deletePost((int)$_POST['post_id'], $_SESSION['user_id']);
+    header("Location: " . $_SERVER['HTTP_REFERER']);
+    exit();
+}
+
+// Handle follow action
+if (isset($_GET['follow'])) {
+    toggleFollow($_SESSION['user_id'], (int)$_GET['follow']);
+    header("Location: profile.php?id=" . (int)$_GET['follow']);
+    exit();
+}
+
+// Handle create post action
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['content']) && !isset($_POST['post_id'])) {
+    createPost($_SESSION['user_id'], trim($_POST['content']), $_FILES['image'] ?? null);
+    header("Location: profile.php?id=" . $_SESSION['user_id']);
+    exit();
+}
+
+// Handle update privacy action
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_privacy'])) {
+    if (!verifyCSRFToken($_POST['csrf_token'])) {
+        die("CSRF token invalid");
+    }
+    $db = getDB();
+    $stmt = $db->prepare("SELECT is_private FROM users WHERE id = ?");
+    $stmt->bind_param("i", $_SESSION['user_id']);
+    $stmt->execute();
+    $result = $stmt->get_result()->fetch_assoc();
+    if ($result) {
+        $current_private = $result['is_private'];
+        $new_private = $current_private ? 0 : 1;
+        echo "User ID: " . $_SESSION['user_id'] . "<br>";
+        echo "Current: $current_private, New: $new_private<br>";
+        updatePrivacy($_SESSION['user_id'], $new_private);
+        header("Location: profile.php?id=" . $_SESSION['user_id']);
+        exit();
+    } else {
+        echo "User not found<br>";
+    }
+}
+
+// Handle respond follow request
+if (isset($_GET['respond_request']) && isset($_GET['action'])) {
+    respondFollowRequest((int)$_GET['respond_request'], $_GET['action'], $_SESSION['user_id']);
+    header("Location: profile.php?id=" . $_SESSION['user_id']);
+    exit();
+}
+
+// Handle remove follower
+if (isset($_GET['remove_follower'])) {
+    removeFollower((int)$_GET['remove_follower'], $_SESSION['user_id']);
+    header("Location: profile.php?id=" . $_SESSION['user_id']);
+    exit();
+}
 
 $db = getDB();
 
@@ -138,7 +194,7 @@ if ($can_view_posts) {
                             <?php if($has_pending_request): ?>
                                 <button class="btn btn-sm btn-secondary w-100" disabled>Verzoek in behandeling</button>
                             <?php else: ?>
-                                <a href="follow.php?user_id=<?php echo $user_id; ?>" class="btn btn-sm w-100 <?php echo $is_following ? 'btn-danger' : 'btn-primary'; ?>">
+                                <a href="?id=<?php echo $user_id; ?>&follow=<?php echo $user_id; ?>" class="btn btn-sm w-100 <?php echo $is_following ? 'btn-danger' : 'btn-primary'; ?>">
                                     <?php echo $is_following ? 'Ontvolgen' : 'Volgen'; ?>
                                 </a>
                             <?php endif; ?>
@@ -161,7 +217,9 @@ if ($can_view_posts) {
                 <div class="card shadow-sm mb-3">
                     <div class="card-body">
                         <h6>Privacy Instellingen</h6>
-                        <form method="POST" action="update_privacy.php">
+                        <form method="POST" action="">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                            <input type="hidden" name="update_privacy" value="1">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" name="is_private" onchange="this.form.submit()" <?php echo $user['is_private'] ? 'checked' : ''; ?>>
                                 <label class="form-check-label small">Privé Account</label>
@@ -180,8 +238,8 @@ if ($can_view_posts) {
                             <div class="d-flex align-items-center p-2 border-bottom">
                                 <img src="assets/uploads/profile_pictures/<?php echo $req['profile_picture'] ?: 'default.png'; ?>" class="rounded-circle me-2" width="30" height="30">
                                 <span class="small flex-grow-1"><strong><?php echo htmlspecialchars($req['username']); ?></strong></span>
-                                <a href="respond_follow_request.php?request_id=<?php echo $req['id']; ?>&action=accept" class="btn btn-xs btn-success py-0 px-1 text-white">✓</a>
-                                <a href="respond_follow_request.php?request_id=<?php echo $req['id']; ?>&action=reject" class="btn btn-xs btn-danger py-0 px-1 text-white ms-1">✕</a>
+                                <a href="?id=<?php echo $_SESSION['user_id']; ?>&respond_request=<?php echo $req['id']; ?>&action=accept" class="btn btn-xs btn-success py-0 px-1 text-white">✓</a>
+                                <a href="?id=<?php echo $_SESSION['user_id']; ?>&respond_request=<?php echo $req['id']; ?>&action=reject" class="btn btn-xs btn-danger py-0 px-1 text-white ms-1">✕</a>
                             </div>
                         <?php endwhile; if($requests->num_rows == 0) echo '<p class="text-muted p-3 mb-0 small">Geen verzoeken</p>'; ?>
                     </div>
@@ -204,7 +262,7 @@ if ($can_view_posts) {
                 <?php if ($user_id == $_SESSION['user_id']): ?>
                     <div class="card mb-3 shadow-sm border-primary">
                         <div class="card-body">
-                            <form action="create_post.php" method="POST" enctype="multipart/form-data">
+                            <form action="" method="POST" enctype="multipart/form-data">
                                 <textarea name="content" class="form-control mb-2" placeholder="Wat wil je delen?" rows="3" required></textarea>
                                 <input type="file" name="image" class="form-control form-control-sm mb-2" accept="image/*">
                                 <button type="submit" class="btn btn-primary">Plaatsen</button>
@@ -228,8 +286,9 @@ if ($can_view_posts) {
                                             </div>
                                         </div>
                                         <?php if($post['user_id'] == $_SESSION['user_id']): ?>
-                                            <form action="delete_post.php" method="POST">
+                                            <form action="" method="POST">
                                                 <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                                                <input type="hidden" name="delete" value="1">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Verwijderen?');">Delete</button>
                                             </form>
                                         <?php endif; ?>
@@ -266,7 +325,7 @@ if ($can_view_posts) {
                             <img src="assets/uploads/profile_pictures/<?php echo $f['profile_picture'] ?: 'default.png'; ?>" class="rounded-circle me-2 border" width="30" height="30" style="object-fit: cover;">
                             <a href="profile.php?id=<?php echo $f['id']; ?>" class="text-decoration-none text-dark small flex-grow-1"><?php echo htmlspecialchars($f['username']); ?></a>
                             <?php if($user_id == $_SESSION['user_id']): ?>
-                                <a href="remove_follower.php?follower_id=<?php echo $f['id']; ?>" class="btn btn-xs btn-outline-danger py-0" style="font-size:0.6rem" onclick="return confirm('Volger verwijderen?')">Verwijder</a>
+                                <a href="?id=<?php echo $_SESSION['user_id']; ?>&remove_follower=<?php echo $f['id']; ?>" class="btn btn-xs btn-outline-danger py-0" style="font-size:0.6rem" onclick="return confirm('Volger verwijderen?')">Verwijder</a>
                             <?php endif; ?>
                         </div>
                     <?php endwhile; if($f_res->num_rows == 0) echo "<small class='text-muted'>Geen volgers.</small>"; ?>

@@ -1,9 +1,26 @@
 <?php
-require_once 'includes/config.php';
-require_once 'includes/database.php';
-require_once 'includes/auth.php';
+require_once 'includes/functies.php';
 
 checkLogin();
+
+// Handle like and comment actions
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['post_id'])) {
+        if (isset($_POST['delete'])) {
+            deletePost((int)$_POST['post_id'], $_SESSION['user_id']);
+            header("Location: index.php");
+            exit();
+        } elseif (isset($_POST['content'])) {
+            // Comment
+            addComment((int)$_POST['post_id'], $_SESSION['user_id'], trim($_POST['content']));
+        } else {
+            // Like
+            toggleLike((int)$_POST['post_id'], $_SESSION['user_id']);
+        }
+        header("Location: " . $_SERVER['HTTP_REFERER']);
+        exit();
+    }
+}
 
 $db = getDB();
 $user_id = $_SESSION['user_id'];
@@ -57,8 +74,9 @@ $comments = $comments_stmt->get_result();
                         </div>
                     </div>
                     <?php if($post['user_id'] == $user_id): ?>
-                        <form action="delete_post.php" method="POST" class="d-inline">
+                        <form action="" method="POST" class="d-inline">
                             <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                            <input type="hidden" name="delete" value="1">
                             <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je zeker dat je deze post wilt verwijderen?');">
                                 Delete
                             </button>
@@ -69,7 +87,7 @@ $comments = $comments_stmt->get_result();
                 <?php if(!empty($post['image'])): ?>
                     <img src="assets/uploads/posts/<?php echo htmlspecialchars($post['image']); ?>" class="img-fluid mb-3">
                 <?php endif; ?>
-                <form action="like.php" method="POST" class="d-inline">
+                <form action="" method="POST" class="d-inline">
                     <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                     <button type="submit" class="btn btn-sm <?php echo $post['user_liked'] ? 'btn-danger' : 'btn-outline-danger'; ?>">
                         Like (<?php echo $post['like_count']; ?>)
@@ -93,8 +111,9 @@ $comments = $comments_stmt->get_result();
                                 </div>
                             </div>
                             <?php if($comment['user_id'] == $user_id): ?>
-                                <form action="delete_post.php" method="POST" class="d-inline">
+                                <form action="" method="POST" class="d-inline">
                                     <input type="hidden" name="post_id" value="<?php echo $comment['id']; ?>">
+                                    <input type="hidden" name="delete" value="1">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je zeker dat je deze reply wilt verwijderen?');">
                                         Delete
                                     </button>
@@ -105,7 +124,7 @@ $comments = $comments_stmt->get_result();
                         <?php if(!empty($comment['image'])): ?>
                             <img src="assets/uploads/posts/<?php echo htmlspecialchars($comment['image']); ?>" class="img-fluid mb-2" style="max-height: 250px;">
                         <?php endif; ?>
-                        <form action="like.php" method="POST" class="d-inline">
+                        <form action="" method="POST" class="d-inline">
                             <input type="hidden" name="post_id" value="<?php echo $comment['id']; ?>">
                             <button type="submit" class="btn btn-sm <?php echo $comment['user_liked'] ? 'btn-danger' : 'btn-outline-danger'; ?>">
                                 Like (<?php echo $comment['like_count']; ?>)
@@ -115,7 +134,7 @@ $comments = $comments_stmt->get_result();
                 </div>
             <?php endwhile; ?>
 
-            <form action="comment.php" method="POST" class="mt-3">
+            <form action="" method="POST" class="mt-3">
                 <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
                 <textarea name="content" class="form-control mb-2" placeholder="Add a reply..." rows="2" required></textarea>
                 <button type="submit" class="btn btn-primary">Reply</button>

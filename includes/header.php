@@ -1,6 +1,5 @@
 <?php
-require_once 'config.php';
-require_once 'database.php';
+require_once 'functies.php';
 
 // Controleer of gebruiker is ingelogd
 if(!isset($_SESSION['user_id']) && basename($_SERVER['PHP_SELF']) != 'login.php' && basename($_SERVER['PHP_SELF']) != 'register.php') {

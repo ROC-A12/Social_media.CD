@@ -1,5 +1,5 @@
 <?php
-require_once 'includes/config.php';
+require_once 'includes/functies.php';
 
 // Sessie vernietigen
 session_destroy();
