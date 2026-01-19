@@ -146,6 +146,17 @@ if ($can_view_posts) {
                     </div>
                 </div>
 
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6>Profielfoto wijzigen</h6>
+                        <form method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                            <input type="file" name="profile_picture" class="form-control form-control-sm mb-2" required>
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Update</button>
+                        </form>
+                    </div>
+                </div>
+
                 <?php if ($user_id == $_SESSION['user_id']): ?>
                 <div class="card shadow-sm mb-3">
                     <div class="card-body">
@@ -158,7 +169,7 @@ if ($can_view_posts) {
                         </form>
                     </div>
                 </div>
-
+                
                 <div class="card shadow-sm mb-3">
                     <div class="card-header bg-white"><h6>Volgverzoeken</h6></div>
                     <div class="card-body p-0" style="max-height: 200px; overflow-y: auto;">
@@ -173,17 +184,6 @@ if ($can_view_posts) {
                                 <a href="respond_follow_request.php?request_id=<?php echo $req['id']; ?>&action=reject" class="btn btn-xs btn-danger py-0 px-1 text-white ms-1">✕</a>
                             </div>
                         <?php endwhile; if($requests->num_rows == 0) echo '<p class="text-muted p-3 mb-0 small">Geen verzoeken</p>'; ?>
-                    </div>
-                </div>
-
-                <div class="card shadow-sm mb-3">
-                    <div class="card-body">
-                        <h6>Profielfoto wijzigen</h6>
-                        <form method="POST" enctype="multipart/form-data">
-                            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                            <input type="file" name="profile_picture" class="form-control form-control-sm mb-2" required>
-                            <button type="submit" class="btn btn-sm btn-primary w-100">Update</button>
-                        </form>
                     </div>
                 </div>
 
