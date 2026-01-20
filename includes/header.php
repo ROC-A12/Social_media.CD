@@ -1,8 +1,16 @@
 <?php
+// Start sessie als deze nog niet gestart is
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once 'functies.php';
 
-// Controleer of gebruiker is ingelogd
-if(!isset($_SESSION['user_id']) && basename($_SERVER['PHP_SELF']) != 'login.php' && basename($_SERVER['PHP_SELF']) != 'register.php') {
+// Alleen redirecten als niet op login/register pagina
+$current_page = basename($_SERVER['PHP_SELF']);
+$excluded_pages = ['login.php', 'register.php'];
+
+if (!isset($_SESSION['user_id']) && !in_array($current_page, $excluded_pages)) {
     header("Location: login.php");
     exit();
 }
