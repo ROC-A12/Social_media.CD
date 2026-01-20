@@ -28,16 +28,17 @@ if (isset($_GET['follow'])) {
 $db = getDB();
 $user_id = $_SESSION['user_id'];
 
-// Haal posts op van alle openbare accounts en accounts die je volgt
+// SQL Query met privacy filter
 $stmt = $db->prepare("
     SELECT posts.*, users.username, users.profile_picture,
            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
            EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
     FROM posts 
     JOIN users ON posts.user_id = users.id
-    WHERE posts.posts_id IS NULL AND (posts.user_id IN (
+    WHERE posts.posts_id IS NULL 
+    AND (users.is_private = 0 OR posts.user_id = ? OR posts.user_id IN (
         SELECT following_id FROM follows WHERE follower_id = ?
-    ) OR posts.user_id = ?)
+    ))
     ORDER BY posts.created_at DESC
     LIMIT 50
 ");
@@ -71,36 +72,19 @@ $posts = $stmt->get_result();
                 </div>
                 
                 <div class="card">
-                    <div class="card-header">
-                        <h6>Discover Users</h6>
-                    </div>
+                    <div class="card-header"><h6>Discover Users</h6></div>
                     <div class="card-body">
                         <?php
-                        $suggestions_stmt = $db->prepare("
-                            SELECT users.id, users.username, users.profile_picture,
-                                   EXISTS(SELECT 1 FROM follows WHERE follower_id = ? AND following_id = users.id) as is_following
-                            FROM users 
-                            WHERE users.id != ? 
-                            AND users.id NOT IN (
-                                SELECT following_id FROM follows WHERE follower_id = ?
-                            )
-                            LIMIT 8
-                        ");
-                        $suggestions_stmt->bind_param("iii", $user_id, $user_id, $user_id);
-                        $suggestions_stmt->execute();
-                        $suggestions = $suggestions_stmt->get_result();
-                        
-                        while($user = $suggestions->fetch_assoc()): ?>
+                        $sugg_stmt = $db->prepare("SELECT id, username, profile_picture FROM users WHERE id != ? AND is_private = 0 AND id NOT IN (SELECT following_id FROM follows WHERE follower_id = ?) LIMIT 5");
+                        $sugg_stmt->bind_param("ii", $user_id, $user_id);
+                        $sugg_stmt->execute();
+                        $sugg_res = $sugg_stmt->get_result();
+                        while($user = $sugg_res->fetch_assoc()): ?>
                             <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
-                                <a href="profile.php?id=<?php echo $user['id']; ?>" class="text-decoration-none">
-                                    <img src="assets/uploads/profile_pictures/<?php echo $user['profile_picture'] ?: 'default.png'; ?>" 
-                                         class="rounded-circle me-2" width="35" height="35">
+                                <a href="profile.php?id=<?php echo $user['id']; ?>">
+                                    <img src="assets/uploads/profile_pictures/<?php echo $user['profile_picture'] ?: 'default.png'; ?>" class="rounded-circle me-2" width="35" height="35">
                                 </a>
-                                <div class="flex-grow-1 min-width-0">
-                                    <a href="profile.php?id=<?php echo $user['id']; ?>" class="text-decoration-none text-dark">
-                                        <strong><?php echo htmlspecialchars($user['username']); ?></strong>
-                                    </a>
-                                </div>
+                                <div class="flex-grow-1"><strong><?php echo htmlspecialchars($user['username']); ?></strong></div>
                                 <a href="index.php?follow=<?php echo $user['id']; ?>" class="btn btn-sm btn-primary">Follow</a>
                             </div>
                         <?php endwhile; ?>
@@ -110,21 +94,17 @@ $posts = $stmt->get_result();
             
             <div class="col-md-6">
                 <h4 class="mb-4">Posts</h4>
-                
                 <?php if($posts->num_rows > 0): ?>
                     <?php while($post = $posts->fetch_assoc()): ?>
                         <div class="card mb-3">
                             <div class="card-body">
                                 <div class="d-flex align-items-center justify-content-between mb-3">
                                     <div class="d-flex align-items-center">
-                                        <a href="profile.php?id=<?php echo $post['user_id']; ?>" class="text-decoration-none">
-                                            <img src="assets/uploads/profile_pictures/<?php echo $post['profile_picture'] ?: 'default.png'; ?>" 
-                                                 class="rounded-circle me-2" width="40" height="40">
+                                        <a href="profile.php?id=<?php echo $post['user_id']; ?>">
+                                            <img src="assets/uploads/profile_pictures/<?php echo $post['profile_picture'] ?: 'default.png'; ?>" class="rounded-circle me-2" width="40" height="40">
                                         </a>
                                         <div>
-                                            <a href="profile.php?id=<?php echo $post['user_id']; ?>" class="text-decoration-none text-dark">
-                                                <h6 class="mb-0"><?php echo htmlspecialchars($post['username']); ?></h6>
-                                            </a>
+                                            <h6 class="mb-0"><?php echo htmlspecialchars($post['username']); ?></h6>
                                             <small class="text-muted"><?php echo date('F j, Y, g:i a', strtotime($post['created_at'])); ?></small>
                                         </div>
                                     </div>
@@ -133,17 +113,17 @@ $posts = $stmt->get_result();
                                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                             <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                                             <input type="hidden" name="delete" value="1">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je zeker dat je deze post wilt verwijderen?');">
-                                                Delete
-                                            </button>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je zeker?');">Delete</button>
                                         </form>
                                     <?php endif; ?>
                                 </div>
                                 
                                 <p><?php echo nl2br(htmlspecialchars($post['content'])); ?></p>
                                 
-                                <?php if(!empty($post['image'])): ?>
-                                    <img src="assets/uploads/posts/<?php echo htmlspecialchars($post['image']); ?>" class="img-fluid mt-3 mb-3" style="max-height: 400px; width: auto;">
+                                <?php 
+                                $img_file = !empty($post['image']) ? $post['image'] : (!empty($post['image_url']) ? $post['image_url'] : '');
+                                if(!empty($img_file)): ?>
+                                    <img src="assets/uploads/posts/<?php echo htmlspecialchars($img_file); ?>" class="img-fluid mt-3 mb-3" style="max-height: 400px; width: auto;">
                                 <?php endif; ?>
                                 
                                 <div class="d-flex justify-content-between mt-3">
@@ -154,47 +134,30 @@ $posts = $stmt->get_result();
                                             Like (<?php echo $post['like_count']; ?>)
                                         </button>
                                     </form>
-                                    
-                                    <a href="post.php?id=<?php echo $post['id']; ?>" class="btn btn-sm btn-outline-primary">
-                                        Reply
-                                    </a>
+                                    <a href="post.php?id=<?php echo $post['id']; ?>" class="btn btn-sm btn-outline-primary">Reply</a>
                                 </div>
                             </div>
                         </div>
                     <?php endwhile; ?>
-                <?php else: ?>
-                    <div class="alert alert-info">No posts to explore. Follow more users to see their posts!</div>
                 <?php endif; ?>
             </div>
             
             <div class="col-md-3">
                 <div class="card">
-                    <div class="card-header">
-                        <h6>Popular Users</h6>
-                    </div>
+                    <div class="card-header"><h6>Popular Users</h6></div>
                     <div class="card-body">
                         <?php
-                        $popular_stmt = $db->prepare("
-                            SELECT users.id, users.username, users.profile_picture,
-                                   (SELECT COUNT(*) FROM follows WHERE following_id = users.id) as follower_count
-                            FROM users 
-                            ORDER BY follower_count DESC
-                            LIMIT 5
-                        ");
-                        $popular_stmt->execute();
-                        $popular = $popular_stmt->get_result();
-                        
-                        while($user = $popular->fetch_assoc()): ?>
+                        $pop_stmt = $db->prepare("SELECT id, username, profile_picture, (SELECT COUNT(*) FROM follows WHERE following_id = users.id) as f_count FROM users WHERE is_private = 0 ORDER BY f_count DESC LIMIT 5");
+                        $pop_stmt->execute();
+                        $pop_res = $pop_stmt->get_result();
+                        while($p_user = $pop_res->fetch_assoc()): ?>
                             <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
-                                <a href="profile.php?id=<?php echo $user['id']; ?>">
-                                    <img src="assets/uploads/profile_pictures/<?php echo $user['profile_picture'] ?: 'default.png'; ?>" 
-                                         class="rounded-circle me-2" width="35" height="35">
+                                <a href="profile.php?id=<?php echo $p_user['id']; ?>">
+                                    <img src="assets/uploads/profile_pictures/<?php echo $p_user['profile_picture'] ?: 'default.png'; ?>" class="rounded-circle me-2" width="35" height="35">
                                 </a>
                                 <div>
-                                    <a href="profile.php?id=<?php echo $user['id']; ?>" class="text-decoration-none text-dark">
-                                        <strong><?php echo htmlspecialchars($user['username']); ?></strong>
-                                    </a>
-                                    <br><small class="text-muted"><?php echo $user['follower_count']; ?> followers</small>
+                                    <strong><?php echo htmlspecialchars($p_user['username']); ?></strong>
+                                    <br><small class="text-muted"><?php echo $p_user['f_count']; ?> followers</small>
                                 </div>
                             </div>
                         <?php endwhile; ?>
@@ -203,7 +166,5 @@ $posts = $stmt->get_result();
             </div>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
