@@ -12,7 +12,7 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 /**
- * Maakt een PDO database verbinding aan en geeft deze terug.
+ * Maakt een PDO database verbinding aan en geeft deze terug
  */
 function getDB() {
     static $pdo = null;
