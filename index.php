@@ -82,6 +82,7 @@ $posts = $db->query($sql, [$user_id, $user_id, $user_id])->fetchAll();
                                 </a>
                                 <div class="flex-grow-1"><strong><?php echo htmlspecialchars($user['username']); ?></strong></div>
                                 <a href="index.php?follow=<?php echo $user['id']; ?>" class="btn btn-sm btn-primary">Follow</a>
+                                <a href="messages.php?user=<?php echo $user['id']; ?>" class="btn btn-sm btn-outline-secondary ms-2">Bericht</a>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -153,6 +154,9 @@ $posts = $db->query($sql, [$user_id, $user_id, $user_id])->fetchAll();
                                 <div>
                                     <strong><?php echo htmlspecialchars($p_user['username']); ?></strong>
                                     <br><small class="text-muted"><?php echo $p_user['f_count']; ?> followers</small>
+                                </div>
+                                <div class="ms-2">
+                                    <a href="messages.php?user=<?php echo $p_user['id']; ?>" class="btn btn-sm btn-outline-secondary">Bericht</a>
                                 </div>
                             </div>
                         <?php endforeach; ?>

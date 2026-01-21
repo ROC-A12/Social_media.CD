@@ -189,6 +189,7 @@ if ($can_view_posts) {
                                     <?php echo $is_following ? 'Ontvolgen' : 'Volgen'; ?>
                                 </a>
                             <?php endif; ?>
+                            <a href="messages.php?user=<?php echo $user_id; ?>" class="btn btn-sm btn-outline-secondary w-100 mt-2">Bericht sturen</a>
                         <?php endif; ?>
                     </div>
                 </div>

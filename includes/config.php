@@ -46,8 +46,10 @@ class Database {
         try {
             return $this->pdo->prepare($sql);
         } catch (PDOException $e) {
-            error_log("Prepare fout: " . $e->getMessage() . " SQL: " . $sql);
-            die("Database query fout.");
+            $msg = "Prepare fout: " . $e->getMessage() . " SQL: " . $sql;
+            error_log($msg);
+            // Temporarily show detailed error for debugging
+            die("Database query fout: " . htmlspecialchars($e->getMessage()));
         }
     }
     

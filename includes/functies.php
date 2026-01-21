@@ -200,3 +200,58 @@ function removeFollower($follower_id, $my_id) {
     $stmt = $db->prepare("DELETE FROM follows WHERE follower_id = ? AND following_id = ?");
     $stmt->execute([$follower_id, $my_id]);
 }
+
+// --- Direct messaging functions ---
+function sendMessage($from_id, $to_id, $content) {
+    $db = getDB();
+    $stmt = $db->prepare("INSERT INTO messages (sender_id, recipient_id, content) VALUES (?, ?, ?)");
+    $stmt->execute([$from_id, $to_id, $content]);
+}
+
+function getConversations($user_id) {
+    $db = getDB();
+    $partners_stmt = $db->prepare("SELECT DISTINCT IF(sender_id = ?, recipient_id, sender_id) AS partner_id FROM messages WHERE sender_id = ? OR recipient_id = ?");
+    $partners_stmt->execute([$user_id, $user_id, $user_id]);
+    $partners = $partners_stmt->fetchAll();
+
+    $result = [];
+    foreach ($partners as $p) {
+        $pid = $p['partner_id'];
+
+        $last_stmt = $db->prepare("SELECT * FROM messages WHERE (sender_id = ? AND recipient_id = ?) OR (sender_id = ? AND recipient_id = ?) ORDER BY created_at DESC LIMIT 1");
+        $last_stmt->execute([$user_id, $pid, $pid, $user_id]);
+        $last = $last_stmt->fetch();
+
+        $unread_stmt = $db->prepare("SELECT COUNT(*) as c FROM messages WHERE sender_id = ? AND recipient_id = ? AND is_read = 0");
+        $unread_stmt->execute([$pid, $user_id]);
+        $unread = $unread_stmt->fetch()['c'];
+
+        $user_stmt = $db->prepare("SELECT id, username, profile_picture FROM users WHERE id = ?");
+        $user_stmt->execute([$pid]);
+        $user = $user_stmt->fetch();
+
+        $result[] = ['user' => $user, 'last' => $last, 'unread' => $unread];
+    }
+
+    // Sort by last message time desc
+    usort($result, function($a, $b) {
+        $ta = isset($a['last']['created_at']) ? strtotime($a['last']['created_at']) : 0;
+        $tb = isset($b['last']['created_at']) ? strtotime($b['last']['created_at']) : 0;
+        return $tb <=> $ta;
+    });
+
+    return $result;
+}
+
+function getMessagesBetween($user1, $user2) {
+    $db = getDB();
+    $stmt = $db->prepare("SELECT m.*, u.username, u.profile_picture FROM messages m JOIN users u ON u.id = m.sender_id WHERE (m.sender_id = ? AND m.recipient_id = ?) OR (m.sender_id = ? AND m.recipient_id = ?) ORDER BY m.created_at ASC");
+    $stmt->execute([$user1, $user2, $user2, $user1]);
+    return $stmt->fetchAll();
+}
+
+function markMessagesRead($from_id, $to_id) {
+    $db = getDB();
+    $stmt = $db->prepare("UPDATE messages SET is_read = 1 WHERE sender_id = ? AND recipient_id = ?");
+    $stmt->execute([$from_id, $to_id]);
+}

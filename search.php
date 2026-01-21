@@ -43,6 +43,7 @@ if (!empty($query)) {
                         <div>
                             <h6><?php echo htmlspecialchars($user['username']); ?></h6>
                             <a href="profile.php?id=<?php echo $user['id']; ?>" class="btn btn-sm btn-primary">View Profile</a>
+                            <a href="messages.php?user=<?php echo $user['id']; ?>" class="btn btn-sm btn-outline-secondary ms-2">Bericht</a>
                         </div>
                     </div>
                 </div>

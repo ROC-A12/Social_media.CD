@@ -53,6 +53,9 @@ if (!isset($_SESSION['user_id']) && !in_array($current_page, $excluded_pages)) {
                 <a class="nav-link" href="search.php">
                     <i class="fas fa-search"></i> Zoeken
                 </a>
+                <a class="nav-link" href="messages.php">
+                    <i class="fas fa-envelope"></i> Berichten
+                </a>
                 <?php if(isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
                 <a class="nav-link" href="admin/dashboard.php">
                     <i class="fas fa-cog"></i> Admin
