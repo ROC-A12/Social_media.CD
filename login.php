@@ -16,12 +16,10 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
     if(empty($errors)) {
         // Gebruiker ophalen
         $stmt = $db->prepare("SELECT id, username, email, password, role, profile_picture FROM users WHERE email = ?");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
         
-        if($result->num_rows == 1) {
-            $user = $result->fetch_assoc();
+        if($user) {
             
             if(password_verify($password, $user['password'])) {
                 // Login succesvol

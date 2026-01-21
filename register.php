@@ -19,14 +19,11 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     // Check of gebruiker al bestaat
     $stmt = $db->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
-    $stmt->bind_param("ss", $username, $email);
-    $stmt->execute();
-    $stmt->store_result();
-    
-    if($stmt->num_rows > 0) {
+    $stmt->execute([$username, $email]);
+    $exists = $stmt->fetch();
+    if($exists) {
         $errors[] = "Username or email already exists";
     }
-    $stmt->close();
     
     if(empty($errors)) {
         // Hash wachtwoord
@@ -35,9 +32,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Gebruiker toevoegen
         $role = 'user';
         $stmt = $db->prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("ssss", $username, $email, $hashed_password, $role);
-        
-        if($stmt->execute()) {
+        if($stmt->execute([$username, $email, $hashed_password, $role])) {
             $_SESSION['success'] = "Registration successful! Please login.";
             header("Location: login.php");
             exit();

@@ -30,9 +30,8 @@ $stmt = $db->prepare("SELECT posts.*, users.username, users.profile_picture,
            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
            EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
     FROM posts JOIN users ON posts.user_id = users.id WHERE posts.id = ?");
-$stmt->bind_param("ii", $user_id, $post_id);
-$stmt->execute();
-$post = $stmt->get_result()->fetch_assoc();
+$stmt->execute([$user_id, $post_id]);
+$post = $stmt->fetch();
 
 if (!$post) {
     header("Location: index.php");
@@ -44,9 +43,8 @@ $comments_stmt = $db->prepare("SELECT posts.*, users.username, users.profile_pic
            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
            EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
     FROM posts JOIN users ON posts.user_id = users.id WHERE posts.posts_id = ? ORDER BY posts.created_at ASC");
-$comments_stmt->bind_param("ii", $user_id, $post_id);
-$comments_stmt->execute();
-$comments = $comments_stmt->get_result();
+$comments_stmt->execute([$user_id, $post_id]);
+$comments = $comments_stmt->fetchAll();
 ?>
 
 <!DOCTYPE html>
@@ -98,7 +96,7 @@ $comments = $comments_stmt->get_result();
 
         <div class="mt-4">
             <h6>Replies</h6>
-            <?php while($comment = $comments->fetch_assoc()): ?>
+            <?php foreach($comments as $comment): ?>
                 <div class="card mb-2">
                     <div class="card-body">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -132,7 +130,7 @@ $comments = $comments_stmt->get_result();
                         </form>
                     </div>
                 </div>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
 
             <form action="" method="POST" class="mt-3">
                 <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">

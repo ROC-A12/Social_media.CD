@@ -28,23 +28,21 @@ if (isset($_GET['follow'])) {
 $db = getDB();
 $user_id = $_SESSION['user_id'];
 
-// SQL Query met privacy filter
-$stmt = $db->prepare("
+// SQL Query met privacy filter (PDO)
+$sql = "
     SELECT posts.*, users.username, users.profile_picture,
            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
            EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
-    FROM posts 
+    FROM posts
     JOIN users ON posts.user_id = users.id
-    WHERE posts.posts_id IS NULL 
+    WHERE posts.posts_id IS NULL
     AND (users.is_private = 0 OR posts.user_id = ? OR posts.user_id IN (
         SELECT following_id FROM follows WHERE follower_id = ?
     ))
     ORDER BY posts.created_at DESC
     LIMIT 50
-");
-$stmt->bind_param("iii", $user_id, $user_id, $user_id);
-$stmt->execute();
-$posts = $stmt->get_result();
+";
+$posts = $db->query($sql, [$user_id, $user_id, $user_id])->fetchAll();
 ?>
 
 <!DOCTYPE html>
@@ -75,11 +73,9 @@ $posts = $stmt->get_result();
                     <div class="card-header"><h6>Discover Users</h6></div>
                     <div class="card-body">
                         <?php
-                        $sugg_stmt = $db->prepare("SELECT id, username, profile_picture FROM users WHERE id != ? AND is_private = 0 AND id NOT IN (SELECT following_id FROM follows WHERE follower_id = ?) LIMIT 5");
-                        $sugg_stmt->bind_param("ii", $user_id, $user_id);
-                        $sugg_stmt->execute();
-                        $sugg_res = $sugg_stmt->get_result();
-                        while($user = $sugg_res->fetch_assoc()): ?>
+                        $sugg_sql = "SELECT id, username, profile_picture FROM users WHERE id != ? AND is_private = 0 AND id NOT IN (SELECT following_id FROM follows WHERE follower_id = ?) LIMIT 5";
+                        $sugg_res = $db->query($sugg_sql, [$user_id, $user_id])->fetchAll();
+                        foreach($sugg_res as $user): ?>
                             <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
                                 <a href="profile.php?id=<?php echo $user['id']; ?>">
                                     <img src="assets/uploads/profile_pictures/<?php echo $user['profile_picture'] ?: 'default.png'; ?>" class="rounded-circle me-2" width="35" height="35">
@@ -87,15 +83,15 @@ $posts = $stmt->get_result();
                                 <div class="flex-grow-1"><strong><?php echo htmlspecialchars($user['username']); ?></strong></div>
                                 <a href="index.php?follow=<?php echo $user['id']; ?>" class="btn btn-sm btn-primary">Follow</a>
                             </div>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </div>
             
             <div class="col-md-6">
                 <h4 class="mb-4">Posts</h4>
-                <?php if($posts->num_rows > 0): ?>
-                    <?php while($post = $posts->fetch_assoc()): ?>
+                <?php if(count($posts) > 0): ?>
+                    <?php foreach($posts as $post): ?>
                         <div class="card mb-3">
                             <div class="card-body">
                                 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -138,7 +134,7 @@ $posts = $stmt->get_result();
                                 </div>
                             </div>
                         </div>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 <?php endif; ?>
             </div>
             
@@ -147,10 +143,9 @@ $posts = $stmt->get_result();
                     <div class="card-header"><h6>Popular Users</h6></div>
                     <div class="card-body">
                         <?php
-                        $pop_stmt = $db->prepare("SELECT id, username, profile_picture, (SELECT COUNT(*) FROM follows WHERE following_id = users.id) as f_count FROM users WHERE is_private = 0 ORDER BY f_count DESC LIMIT 5");
-                        $pop_stmt->execute();
-                        $pop_res = $pop_stmt->get_result();
-                        while($p_user = $pop_res->fetch_assoc()): ?>
+                        $pop_sql = "SELECT id, username, profile_picture, (SELECT COUNT(*) FROM follows WHERE following_id = users.id) as f_count FROM users WHERE is_private = 0 ORDER BY f_count DESC LIMIT 5";
+                        $pop_res = $db->query($pop_sql)->fetchAll();
+                        foreach($pop_res as $p_user): ?>
                             <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
                                 <a href="profile.php?id=<?php echo $p_user['id']; ?>">
                                     <img src="assets/uploads/profile_pictures/<?php echo $p_user['profile_picture'] ?: 'default.png'; ?>" class="rounded-circle me-2" width="35" height="35">
@@ -160,7 +155,7 @@ $posts = $stmt->get_result();
                                     <br><small class="text-muted"><?php echo $p_user['f_count']; ?> followers</small>
                                 </div>
                             </div>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </div>

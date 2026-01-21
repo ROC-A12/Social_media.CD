@@ -10,9 +10,8 @@ $users = [];
 if (!empty($query)) {
     $stmt = $db->prepare("SELECT id, username, profile_picture FROM users WHERE username LIKE ? LIMIT 20");
     $search = "%$query%";
-    $stmt->bind_param("s", $search);
-    $stmt->execute();
-    $users = $stmt->get_result();
+    $stmt->execute([$search]);
+    $users = $stmt->fetchAll();
 }
 ?>
 
@@ -37,7 +36,7 @@ if (!empty($query)) {
 
         <?php if (!empty($query)): ?>
             <h4>Results for "<?php echo htmlspecialchars($query); ?>"</h4>
-            <?php while($user = $users->fetch_assoc()): ?>
+            <?php foreach($users as $user): ?>
                 <div class="card mb-2">
                     <div class="card-body d-flex align-items-center">
                         <img src="assets/uploads/profile_pictures/<?php echo $user['profile_picture'] ?: 'default.png'; ?>" class="rounded-circle me-3" width="50" height="50">
@@ -47,7 +46,7 @@ if (!empty($query)) {
                         </div>
                     </div>
                 </div>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         <?php endif; ?>
     </div>
 

@@ -1,126 +1,11 @@
 <?php
-session_start();
-//naar casper
-// Jouw databasegegevens
-define('BASE_URL', 'http://localhost/Social_media.CD/');
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'social_media');
-define('DB_CHARSET', 'utf8mb4');
+include_once 'config.php';
+
+
 
 // Beveiliging - foutmeldingen uitzetten in productie
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
-
-class Database {
-    private $host = DB_HOST;
-    private $user = DB_USER;
-    private $pass = DB_PASS;
-    private $dbname = DB_NAME;
-    private $charset = DB_CHARSET;
-    
-    private $conn;
-    private $error;
-    
-    public function __construct() {
-        $this->connect();
-    }
-    
-    private function connect() {
-        $this->conn = new mysqli($this->host, $this->user, $this->pass, $this->dbname);
-        
-        if ($this->conn->connect_error) {
-            $this->error = "Database connectie mislukt: " . $this->conn->connect_error;
-            error_log($this->error);
-            die("Database connectie mislukt. Controleer uw instellingen.");
-        }
-        
-        $this->conn->set_charset($this->charset);
-        $this->conn->query("SET sql_mode=''");
-    }
-    
-    public function getConnection() {
-        return $this->conn;
-    }
-    
-    public function prepare($sql) {
-        $stmt = $this->conn->prepare($sql);
-        if (!$stmt) {
-            error_log("Prepare fout: " . $this->conn->error . " SQL: " . $sql);
-            die("Database query fout.");
-        }
-        return $stmt;
-    }
-    
-    public function query($sql, $params = []) {
-        $stmt = $this->conn->prepare($sql);
-        if (!$stmt) {
-            error_log("Query fout: " . $this->conn->error);
-            return false;
-        }
-        if ($params) {
-            $types = '';
-            foreach ($params as $param) {
-                if (is_int($param)) $types .= 'i';
-                elseif (is_float($param)) $types .= 'd';
-                else $types .= 's';
-            }
-            $stmt->bind_param($types, ...$params);
-        }
-        $stmt->execute();
-        return $stmt;
-    }
-    
-    public function fetch($sql, $params = []) {
-        $stmt = $this->query($sql, $params);
-        return $stmt ? $stmt->get_result()->fetch_assoc() : false;
-    }
-    
-    public function fetchAll($sql, $params = []) {
-        $stmt = $this->query($sql, $params);
-        return $stmt ? $stmt->get_result()->fetch_all(MYSQLI_ASSOC) : false;
-    }
-    
-    public function insert($sql, $params = []) {
-        $stmt = $this->query($sql, $params);
-        return $stmt ? $this->conn->insert_id : false;
-    }
-    
-    public function execute($sql, $params = []) {
-        $stmt = $this->query($sql, $params);
-        return $stmt ? $stmt->affected_rows : false;
-    }
-    
-    public function lastInsertId() {
-        return $this->conn->insert_id;
-    }
-    
-    public function beginTransaction() {
-        return $this->conn->begin_transaction();
-    }
-    
-    public function commit() {
-        return $this->conn->commit();
-    }
-    
-    public function rollback() {
-        return $this->conn->rollback();
-    }
-    
-    public function getError() {
-        return $this->error;
-    }
-}
-
-// Helper functie voor database verbinding
-function getDB() {
-    static $db = null;
-    if ($db === null) {
-        $db = new Database();
-    }
-    return $db;
-}
 
 function checkLogin() {
     if(!isset($_SESSION['user_id'])) {
@@ -175,20 +60,16 @@ function toggleLike($post_id, $user_id) {
     
     // Check if already liked
     $check_stmt = $db->prepare("SELECT id FROM likes WHERE user_id = ? AND post_id = ?");
-    $check_stmt->bind_param("ii", $user_id, $post_id);
-    $check_stmt->execute();
-    $check_stmt->store_result();
+    $check_stmt->execute([$user_id, $post_id]);
 
-    if ($check_stmt->num_rows > 0) {
+    if ($check_stmt->rowCount() > 0) {
         // Unlike
         $stmt = $db->prepare("DELETE FROM likes WHERE user_id = ? AND post_id = ?");
-        $stmt->bind_param("ii", $user_id, $post_id);
-        $stmt->execute();
+        $stmt->execute([$user_id, $post_id]);
     } else {
         // Like
         $stmt = $db->prepare("INSERT INTO likes (user_id, post_id) VALUES (?, ?)");
-        $stmt->bind_param("ii", $user_id, $post_id);
-        $stmt->execute();
+        $stmt->execute([$user_id, $post_id]);
     }
 }
 
@@ -199,39 +80,32 @@ function toggleFollow($follower_id, $following_id) {
     
     // Check if already following
     $check_stmt = $db->prepare("SELECT id FROM follows WHERE follower_id = ? AND following_id = ?");
-    $check_stmt->bind_param("ii", $follower_id, $following_id);
-    $check_stmt->execute();
-    $result = $check_stmt->get_result();
+    $check_stmt->execute([$follower_id, $following_id]);
 
-    if ($result->num_rows > 0) {
+    if ($check_stmt->rowCount() > 0) {
         // Unfollow
         $delete_stmt = $db->prepare("DELETE FROM follows WHERE follower_id = ? AND following_id = ?");
-        $delete_stmt->bind_param("ii", $follower_id, $following_id);
-        $delete_stmt->execute();
+        $delete_stmt->execute([$follower_id, $following_id]);
     } else {
         // Check if private account
         $user_stmt = $db->prepare("SELECT is_private FROM users WHERE id = ?");
-        $user_stmt->bind_param("i", $following_id);
-        $user_stmt->execute();
-        $user_data = $user_stmt->get_result()->fetch_assoc();
+        $user_stmt->execute([$following_id]);
+        $user_data = $user_stmt->fetch();
 
         if ($user_data['is_private']) {
             // Private account: Check if request already exists
             $req_check = $db->prepare("SELECT id FROM follow_requests WHERE requester_id = ? AND recipient_id = ? AND status = 'pending'");
-            $req_check->bind_param("ii", $follower_id, $following_id);
-            $req_check->execute();
+            $req_check->execute([$follower_id, $following_id]);
             
-            if ($req_check->get_result()->num_rows == 0) {
+            if ($req_check->rowCount() == 0) {
                 // Send new request
                 $req_stmt = $db->prepare("INSERT INTO follow_requests (requester_id, recipient_id, status) VALUES (?, ?, 'pending')");
-                $req_stmt->bind_param("ii", $follower_id, $following_id);
-                $req_stmt->execute();
+                $req_stmt->execute([$follower_id, $following_id, 'pending']);
             }
         } else {
             // Public account: Follow directly
             $insert_stmt = $db->prepare("INSERT INTO follows (follower_id, following_id) VALUES (?, ?)");
-            $insert_stmt->bind_param("ii", $follower_id, $following_id);
-            $insert_stmt->execute();
+            $insert_stmt->execute([$follower_id, $following_id]);
         }
     }
 }
@@ -241,10 +115,8 @@ function deletePost($post_id, $user_id) {
     
     // Check ownership
     $stmt = $db->prepare("SELECT user_id FROM posts WHERE id = ?");
-    $stmt->bind_param("i", $post_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $post = $result->fetch_assoc();
+    $stmt->execute([$post_id]);
+    $post = $stmt->fetch();
 
     if (!$post || $post['user_id'] != $user_id) {
         return false;
@@ -262,8 +134,7 @@ function addComment($post_id, $user_id, $content) {
     
     if (!empty($content)) {
         $stmt = $db->prepare("INSERT INTO posts (user_id, posts_id, content) VALUES (?, ?, ?)");
-        $stmt->bind_param("iis", $user_id, $post_id, $content);
-        $stmt->execute();
+        $stmt->execute([$user_id, $post_id, $content]);
         return true;
     }
     return false;
@@ -292,8 +163,7 @@ function createPost($user_id, $content, $image_file = null) {
 
     if (!empty($content) || $image_url) {
         $stmt = $db->prepare("INSERT INTO posts (user_id, content, image) VALUES (?, ?, ?)");
-        $stmt->bind_param("iss", $user_id, $content, $image_url);
-        $stmt->execute();
+        $stmt->execute([$user_id, $content, $image_url]);
         return true;
     }
     return false;
@@ -303,28 +173,24 @@ function updatePrivacy($user_id, $is_private) {
     $db = getDB();
     
     $stmt = $db->prepare("UPDATE users SET is_private = ? WHERE id = ?");
-    $stmt->bind_param("ii", $is_private, $user_id);
-    $stmt->execute();
+    $stmt->execute([$is_private, $user_id]);
 }
 
 function respondFollowRequest($request_id, $action, $recipient_id) {
     $db = getDB();
     
     $stmt = $db->prepare("SELECT requester_id, recipient_id FROM follow_requests WHERE id = ? AND recipient_id = ?");
-    $stmt->bind_param("ii", $request_id, $recipient_id);
-    $stmt->execute();
-    $req = $stmt->get_result()->fetch_assoc();
+    $stmt->execute([$request_id, $recipient_id]);
+    $req = $stmt->fetch();
 
     if ($req) {
         if ($action == 'accept') {
             $stmt = $db->prepare("INSERT IGNORE INTO follows (follower_id, following_id) VALUES (?, ?)");
-            $stmt->bind_param("ii", $req['requester_id'], $req['recipient_id']);
-            $stmt->execute();
+            $stmt->execute([$req['requester_id'], $req['recipient_id']]);
         }
         // Delete request after action
         $stmt = $db->prepare("DELETE FROM follow_requests WHERE id = ?");
-        $stmt->bind_param("i", $request_id);
-        $stmt->execute();
+        $stmt->execute([$request_id]);
     }
 }
 
@@ -332,6 +198,5 @@ function removeFollower($follower_id, $my_id) {
     $db = getDB();
     
     $stmt = $db->prepare("DELETE FROM follows WHERE follower_id = ? AND following_id = ?");
-    $stmt->bind_param("ii", $follower_id, $my_id);
-    $stmt->execute();
+    $stmt->execute([$follower_id, $my_id]);
 }
