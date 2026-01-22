@@ -5,10 +5,6 @@ include_once 'config.php';
 // ini_set('display_errors', 1);
 // error_reporting(E_ALL);
 
-/**
- * Controleer login
- * - Redirect naar `login.php` als er geen actieve gebruiker is
- */
 function checkLogin() {
     // Zorg dat er een geldige sessie is; anders doorsturen naar inloggen
     if(!isset($_SESSION['user_id'])) {
@@ -17,10 +13,8 @@ function checkLogin() {
     }
 }
 
-/**
- * Sanitize input
- * - Verwijdert onnodige whitespace en escapt speciale tekens
- */
+
+ // Verwijdert onnodige whitespace en escapt speciale tekens
 function sanitizeInput($input) {
     $input = trim($input);
     $input = stripslashes($input);
@@ -30,10 +24,10 @@ function sanitizeInput($input) {
 
 // Validatie- en helperfuncties hierboven: gebruik deze voor alle gebruikersinvoer
 
-/**
- * E-mail validatie
- * - Retourneert gefilterde waarde of false
- */
+
+  //E-mail validatie
+  //Retourneert gefilterde waarde of false
+
 function validateEmail($email) {
     return filter_var($email, FILTER_VALIDATE_EMAIL);
 }
@@ -57,10 +51,8 @@ function validateImage($file) {
     return true;
 }
 
-/**
- * Genereer CSRF-token
- * - Bewaart token in sessie en retourneert deze
- */
+// Genereer CSRF-token
+// - Bewaart token in sessie en retourneert deze
 function generateCSRFToken() {
     if(!isset($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -68,19 +60,15 @@ function generateCSRFToken() {
     return $_SESSION['csrf_token'];
 }
 
-/**
- * Verifieer CSRF-token
- * - Beveiliging tegen CSRF door vergelijking met sessie-token
- */
+// Verifieer CSRF-token
+// - Beveiliging tegen CSRF door vergelijking met sessie-token
 function verifyCSRFToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
-/**
- * Formatteer datum in Nederlands
- * - `short=true` geeft korte notatie (bv. "21 jan 14:26")
- * - `short=false` geeft lange notatie (bv. "21 januari 2026, 14:26")
- */
+// Formatteer datum in Nederlands
+// - `short=true` geeft korte notatie (bv. "21 jan 14:26")
+// - `short=false` geeft lange notatie (bv. "21 januari 2026, 14:26")
 function formatDateDutch($datetime, $short = true) {
     if (empty($datetime)) return '';
     try {
@@ -123,10 +111,8 @@ function formatDateDutch($datetime, $short = true) {
     }
 }
 
-/**
- * Toggle like
- * - Voegt een like toe of verwijdert deze als al geliked
- */
+// Toggle like
+// - Voegt een like toe of verwijdert deze als al geliked
 function toggleLike($post_id, $user_id) {
     $db = getDB();
     
@@ -145,11 +131,9 @@ function toggleLike($post_id, $user_id) {
     }
 }
 
-/**
- * Toggle follow
- * - Volg of ontvolg een gebruiker
- * - Bij privé-accounts wordt een follow_request aangemaakt
- */
+// Toggle follow
+// - Volg of ontvolg een gebruiker
+// - Bij privé-accounts wordt een follow_request aangemaakt
 function toggleFollow($follower_id, $following_id) {
     $db = getDB();
     
@@ -187,10 +171,8 @@ function toggleFollow($follower_id, $following_id) {
     }
 }
 
-/**
- * Verwijder post
- * - Controleert eigendom en verwijdert post + gerelateerde likes/reacties
- */
+// Verwijder post
+// - Controleert eigendom en verwijdert post + gerelateerde likes/reacties
 function deletePost($post_id, $user_id) {
     $db = getDB();
     
@@ -210,10 +192,8 @@ function deletePost($post_id, $user_id) {
     return true;
 }
 
-/**
- * Voeg reactie toe
- * - Slaat reactie op als `posts` record met `posts_id` verwijzing
- */
+// Voeg reactie toe
+// - Slaat reactie op als `posts` record met `posts_id` verwijzing
 function addComment($post_id, $user_id, $content) {
     $db = getDB();
     
@@ -226,10 +206,8 @@ function addComment($post_id, $user_id, $content) {
     return false;
 }
 
-/**
- * Maak nieuwe post
- * - Ondersteunt optionele afbeelding upload
- */
+// Maak nieuwe post
+// - Ondersteunt optionele afbeelding upload
 function createPost($user_id, $content, $image_file = null) {
     $db = getDB();
     
@@ -259,10 +237,8 @@ function createPost($user_id, $content, $image_file = null) {
     return false;
 }
 
-/**
- * Update privacy-instelling
- * - Zet profiel op privé (1) of openbaar (0)
- */
+// Update privacy-instelling
+// - Zet profiel op privé (1) of openbaar (0)
 function updatePrivacy($user_id, $is_private) {
     $db = getDB();
     
@@ -270,10 +246,8 @@ function updatePrivacy($user_id, $is_private) {
     $stmt->execute([$is_private, $user_id]);
 }
 
-/**
- * Behandel follow-verzoek
- * - Accepteer of weiger verzoek en werk data bij
- */
+// Behandel follow-verzoek
+// - Accepteer of weiger verzoek en werk data bij
 function respondFollowRequest($request_id, $action, $recipient_id) {
     $db = getDB();
     
@@ -292,10 +266,8 @@ function respondFollowRequest($request_id, $action, $recipient_id) {
     }
 }
 
-/**
- * Verwijder volger
- * - Verwijdert een follower record voor deze gebruiker
- */
+// Verwijder volger
+// - Verwijdert een follower record voor deze gebruiker
 function removeFollower($follower_id, $my_id) {
     $db = getDB();
     
@@ -304,20 +276,16 @@ function removeFollower($follower_id, $my_id) {
 }
 
 // --- Functies voor directe berichten ---
-/**
- * Verstuur bericht
- * - Slaat een nieuw chatbericht op tussen twee gebruikers
- */
+// Verstuur bericht
+// - Slaat een nieuw chatbericht op tussen twee gebruikers
 function sendMessage($from_id, $to_id, $content) {
     $db = getDB();
     $stmt = $db->prepare("INSERT INTO messages (sender_id, recipient_id, content) VALUES (?, ?, ?)");
     $stmt->execute([$from_id, $to_id, $content]);
 }
 
-/**
- * Haal gesprekken op
- * - Geeft een lijst met gesprekspartners, laatste bericht en ongelezen aantal
- */
+// Haal gesprekken op
+// - Geeft een lijst met gesprekspartners, laatste bericht en ongelezen aantal
 function getConversations($user_id) {
     $db = getDB();
     $partners_stmt = $db->prepare("SELECT DISTINCT IF(sender_id = ?, recipient_id, sender_id) AS partner_id FROM messages WHERE sender_id = ? OR recipient_id = ?");
@@ -353,10 +321,8 @@ function getConversations($user_id) {
     return $result;
 }
 
-/**
- * Haal berichten tussen twee gebruikers
- * - Retourneert alle berichten chronologisch
- */
+// Haal berichten tussen twee gebruikers
+// - Retourneert alle berichten chronologisch
 function getMessagesBetween($user1, $user2) {
     $db = getDB();
     $stmt = $db->prepare("SELECT m.*, u.username, u.profile_picture FROM messages m JOIN users u ON u.id = m.sender_id WHERE (m.sender_id = ? AND m.recipient_id = ?) OR (m.sender_id = ? AND m.recipient_id = ?) ORDER BY m.created_at ASC");
@@ -364,10 +330,8 @@ function getMessagesBetween($user1, $user2) {
     return $stmt->fetchAll();
 }
 
-/**
- * Markeer berichten als gelezen
- * - Zet `is_read` voor berichten van `from_id` naar `to_id`
- */
+// Markeer berichten als gelezen
+// - Zet `is_read` voor berichten van `from_id` naar `to_id`
 function markMessagesRead($from_id, $to_id) {
     $db = getDB();
     $stmt = $db->prepare("UPDATE messages SET is_read = 1 WHERE sender_id = ? AND recipient_id = ?");
