@@ -3,7 +3,7 @@ require_once 'includes/functies.php';
 
 checkLogin();
 
-// Handle like and delete actions
+// Verwerk likes en verwijderacties
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['post_id'])) {
     if (!verifyCSRFToken($_POST['csrf_token'])) {
         die("CSRF token invalid");
@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['post_id'])) {
     exit();
 }
 
-// Handle follow action
+// Volgactie verwerken
 if (isset($_GET['follow'])) {
     toggleFollow($_SESSION['user_id'], (int)$_GET['follow']);
     header("Location: index.php");
@@ -50,7 +50,7 @@ $posts = $db->query($sql, [$user_id, $user_id, $user_id])->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - Social Media</title>
+    <title>Startpagina - Social Media</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -65,12 +65,12 @@ $posts = $db->query($sql, [$user_id, $user_id, $user_id])->fetchAll();
                         <img src="assets/uploads/profile_pictures/<?php echo $_SESSION['profile_pic'] ?: 'default.png'; ?>" 
                              class="rounded-circle mb-2" width="100" height="100">
                         <h5><?php echo htmlspecialchars($_SESSION['username']); ?></h5>
-                        <a href="profile.php?id=<?php echo $user_id; ?>" class="btn btn-sm btn-outline-primary">View Profile</a>
+                        <a href="profile.php?id=<?php echo $user_id; ?>" class="btn btn-sm btn-outline-primary">Bekijk profiel</a>
                     </div>
                 </div>
                 
                 <div class="card">
-                    <div class="card-header"><h6>Discover Users</h6></div>
+                    <div class="card-header"><h6>Ontdek gebruikers</h6></div>
                     <div class="card-body">
                         <?php
                         $sugg_sql = "SELECT id, username, profile_picture FROM users WHERE id != ? AND is_private = 0 AND id NOT IN (SELECT following_id FROM follows WHERE follower_id = ?) LIMIT 5";
@@ -81,7 +81,7 @@ $posts = $db->query($sql, [$user_id, $user_id, $user_id])->fetchAll();
                                     <img src="assets/uploads/profile_pictures/<?php echo $user['profile_picture'] ?: 'default.png'; ?>" class="rounded-circle me-2" width="35" height="35">
                                 </a>
                                 <div class="flex-grow-1"><strong><?php echo htmlspecialchars($user['username']); ?></strong></div>
-                                <a href="index.php?follow=<?php echo $user['id']; ?>" class="btn btn-sm btn-primary">Follow</a>
+                                <a href="index.php?follow=<?php echo $user['id']; ?>" class="btn btn-sm btn-primary">Volgen</a>
                                 <a href="messages.php?user=<?php echo $user['id']; ?>" class="btn btn-sm btn-outline-secondary ms-2">Bericht</a>
                             </div>
                         <?php endforeach; ?>
@@ -90,7 +90,7 @@ $posts = $db->query($sql, [$user_id, $user_id, $user_id])->fetchAll();
             </div>
             
             <div class="col-md-6">
-                <h4 class="mb-4">Posts</h4>
+                <h4 class="mb-4">Berichten</h4>
                 <?php if(count($posts) > 0): ?>
                     <?php foreach($posts as $post): ?>
                         <div class="card mb-3">
@@ -102,7 +102,7 @@ $posts = $db->query($sql, [$user_id, $user_id, $user_id])->fetchAll();
                                         </a>
                                         <div>
                                             <h6 class="mb-0"><?php echo htmlspecialchars($post['username']); ?></h6>
-                                            <small class="text-muted"><?php echo date('F j, Y, g:i a', strtotime($post['created_at'])); ?></small>
+                                            <small class="text-muted"><?php echo formatDateDutch($post['created_at']); ?></small>
                                         </div>
                                     </div>
                                     <?php if($post['user_id'] == $user_id): ?>
@@ -110,7 +110,7 @@ $posts = $db->query($sql, [$user_id, $user_id, $user_id])->fetchAll();
                                             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                             <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                                             <input type="hidden" name="delete" value="1">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je zeker?');">Delete</button>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je het zeker?');">Verwijderen</button>
                                         </form>
                                     <?php endif; ?>
                                 </div>
@@ -127,11 +127,11 @@ $posts = $db->query($sql, [$user_id, $user_id, $user_id])->fetchAll();
                                     <form action="" method="POST" class="d-inline">
                                         <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                         <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
-                                        <button type="submit" class="btn btn-sm <?php echo $post['user_liked'] ? 'btn-danger' : 'btn-outline-danger'; ?>">
-                                            Like (<?php echo $post['like_count']; ?>)
+                                            <button type="submit" class="btn btn-sm <?php echo $post['user_liked'] ? 'btn-danger' : 'btn-outline-danger'; ?>">
+                                            like (<?php echo $post['like_count']; ?>)
                                         </button>
                                     </form>
-                                    <a href="post.php?id=<?php echo $post['id']; ?>" class="btn btn-sm btn-outline-primary">Reply</a>
+                                    <a href="post.php?id=<?php echo $post['id']; ?>" class="btn btn-sm btn-outline-primary">Bekijk bericht</a>
                                 </div>
                             </div>
                         </div>
@@ -141,7 +141,7 @@ $posts = $db->query($sql, [$user_id, $user_id, $user_id])->fetchAll();
             
             <div class="col-md-3">
                 <div class="card">
-                    <div class="card-header"><h6>Popular Users</h6></div>
+                    <div class="card-header"><h6>Populaire gebruikers</h6></div>
                     <div class="card-body">
                         <?php
                         $pop_sql = "SELECT id, username, profile_picture, (SELECT COUNT(*) FROM follows WHERE following_id = users.id) as f_count FROM users WHERE is_private = 0 ORDER BY f_count DESC LIMIT 5";
@@ -153,7 +153,7 @@ $posts = $db->query($sql, [$user_id, $user_id, $user_id])->fetchAll();
                                 </a>
                                 <div>
                                     <strong><?php echo htmlspecialchars($p_user['username']); ?></strong>
-                                    <br><small class="text-muted"><?php echo $p_user['f_count']; ?> followers</small>
+                                    <br><small class="text-muted"><?php echo $p_user['f_count']; ?> volgers</small>
                                 </div>
                                 <div class="ms-2">
                                     <a href="messages.php?user=<?php echo $p_user['id']; ?>" class="btn btn-sm btn-outline-secondary">Bericht</a>

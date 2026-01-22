@@ -55,19 +55,61 @@ function verifyCSRFToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
+function formatDateDutch($datetime, $short = true) {
+    if (empty($datetime)) return '';
+    try {
+        $dt = new DateTime($datetime);
+    } catch (Exception $e) {
+        return $datetime;
+    }
+
+    if (class_exists('IntlDateFormatter')) {
+        if ($short) {
+            // korte weergave: 21 jan 14:26
+            $fmt = new IntlDateFormatter('nl_NL', IntlDateFormatter::MEDIUM, IntlDateFormatter::SHORT, 'Europe/Amsterdam', IntlDateFormatter::GREGORIAN);
+            $fmt->setPattern('d MMM HH:mm');
+            $res = $fmt->format($dt);
+            // Verwijder ongewenste punten uit afkortingen (bv. "jan.")
+            $res = str_replace('.', '', $res);
+            return $res;
+        } else {
+            // lange weergave: 21 januari 2026, 14:26
+            $fmt = new IntlDateFormatter('nl_NL', IntlDateFormatter::LONG, IntlDateFormatter::SHORT, 'Europe/Amsterdam', IntlDateFormatter::GREGORIAN);
+            $fmt->setPattern('d MMMM yyyy, HH:mm');
+            return $fmt->format($dt);
+        }
+    } else {
+        // Fallback zonder strftime() (deprecated): bouw Nederlandse maandnamen handmatig
+        if ($short) {
+            $months_short = [1 => 'jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+            $day = $dt->format('j');
+            $month = (int)$dt->format('n');
+            $time = $dt->format('H:i');
+            return sprintf('%d %s %s', $day, $months_short[$month], $time);
+        } else {
+            $months = [1 => 'januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+            $day = $dt->format('j');
+            $month = (int)$dt->format('n');
+            $year = $dt->format('Y');
+            $time = $dt->format('H:i');
+            return sprintf('%d %s %s, %s', $day, $months[$month], $year, $time);
+        }
+    }
+}
+
 function toggleLike($post_id, $user_id) {
     $db = getDB();
     
-    // Check if already liked
+    // Controleer of al geliked
     $check_stmt = $db->prepare("SELECT id FROM likes WHERE user_id = ? AND post_id = ?");
     $check_stmt->execute([$user_id, $post_id]);
 
     if ($check_stmt->rowCount() > 0) {
-        // Unlike
+        // Verwijder like
         $stmt = $db->prepare("DELETE FROM likes WHERE user_id = ? AND post_id = ?");
         $stmt->execute([$user_id, $post_id]);
     } else {
-        // Like
+        // Liken
         $stmt = $db->prepare("INSERT INTO likes (user_id, post_id) VALUES (?, ?)");
         $stmt->execute([$user_id, $post_id]);
     }
@@ -78,32 +120,32 @@ function toggleFollow($follower_id, $following_id) {
     
     if ($following_id == $follower_id) return;
     
-    // Check if already following
+    // Controleer of al gevolgd
     $check_stmt = $db->prepare("SELECT id FROM follows WHERE follower_id = ? AND following_id = ?");
     $check_stmt->execute([$follower_id, $following_id]);
 
     if ($check_stmt->rowCount() > 0) {
-        // Unfollow
+        // Ontvolgen
         $delete_stmt = $db->prepare("DELETE FROM follows WHERE follower_id = ? AND following_id = ?");
         $delete_stmt->execute([$follower_id, $following_id]);
     } else {
-        // Check if private account
+        // Controleer of account privé is
         $user_stmt = $db->prepare("SELECT is_private FROM users WHERE id = ?");
         $user_stmt->execute([$following_id]);
         $user_data = $user_stmt->fetch();
 
         if ($user_data['is_private']) {
-            // Private account: Check if request already exists
+            // Privé-account: controleer of verzoek al bestaat
             $req_check = $db->prepare("SELECT id FROM follow_requests WHERE requester_id = ? AND recipient_id = ? AND status = 'pending'");
             $req_check->execute([$follower_id, $following_id]);
             
             if ($req_check->rowCount() == 0) {
-                // Send new request
-                $req_stmt = $db->prepare("INSERT INTO follow_requests (requester_id, recipient_id, status) VALUES (?, ?, 'pending')");
+                // Verstuur nieuw verzoek
+                $req_stmt = $db->prepare("INSERT INTO follow_requests (requester_id, recipient_id, status) VALUES (?, ?, ?)");
                 $req_stmt->execute([$follower_id, $following_id, 'pending']);
             }
         } else {
-            // Public account: Follow directly
+            // Openbaar account: direct volgen
             $insert_stmt = $db->prepare("INSERT INTO follows (follower_id, following_id) VALUES (?, ?)");
             $insert_stmt->execute([$follower_id, $following_id]);
         }
@@ -113,7 +155,7 @@ function toggleFollow($follower_id, $following_id) {
 function deletePost($post_id, $user_id) {
     $db = getDB();
     
-    // Check ownership
+    // Controleer eigendom
     $stmt = $db->prepare("SELECT user_id FROM posts WHERE id = ?");
     $stmt->execute([$post_id]);
     $post = $stmt->fetch();
@@ -122,7 +164,7 @@ function deletePost($post_id, $user_id) {
         return false;
     }
 
-    // Delete likes and comments
+    // Verwijder likes en reacties
     $db->query("DELETE FROM likes WHERE post_id = ? OR post_id IN (SELECT id FROM posts WHERE posts_id = ?)", [$post_id, $post_id]);
     $db->query("DELETE FROM posts WHERE id = ? OR posts_id = ?", [$post_id, $post_id]);
     
@@ -188,7 +230,7 @@ function respondFollowRequest($request_id, $action, $recipient_id) {
             $stmt = $db->prepare("INSERT IGNORE INTO follows (follower_id, following_id) VALUES (?, ?)");
             $stmt->execute([$req['requester_id'], $req['recipient_id']]);
         }
-        // Delete request after action
+        // Verwijder verzoek na actie
         $stmt = $db->prepare("DELETE FROM follow_requests WHERE id = ?");
         $stmt->execute([$request_id]);
     }
@@ -201,7 +243,7 @@ function removeFollower($follower_id, $my_id) {
     $stmt->execute([$follower_id, $my_id]);
 }
 
-// --- Direct messaging functions ---
+// --- Functies voor directe berichten ---
 function sendMessage($from_id, $to_id, $content) {
     $db = getDB();
     $stmt = $db->prepare("INSERT INTO messages (sender_id, recipient_id, content) VALUES (?, ?, ?)");
@@ -233,7 +275,7 @@ function getConversations($user_id) {
         $result[] = ['user' => $user, 'last' => $last, 'unread' => $unread];
     }
 
-    // Sort by last message time desc
+    // Sorteer op laatste bericht tijd aflopend
     usort($result, function($a, $b) {
         $ta = isset($a['last']['created_at']) ? strtotime($a['last']['created_at']) : 0;
         $tb = isset($b['last']['created_at']) ? strtotime($b['last']['created_at']) : 0;

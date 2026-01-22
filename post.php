@@ -3,7 +3,7 @@ require_once 'includes/functies.php';
 
 checkLogin();
 
-// Handle like and comment actions
+// Verwerk likes en reacties
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['post_id'])) {
         if (isset($_POST['delete'])) {
@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             header("Location: index.php");
             exit();
         } elseif (isset($_POST['content'])) {
-            // Comment
+            // Reactie
             addComment((int)$_POST['post_id'], $_SESSION['user_id'], trim($_POST['content']));
         } else {
             // Like
@@ -38,7 +38,7 @@ if (!$post) {
     exit();
 }
 
-// Get comments/replies with like counts
+// Haal reacties op met aantal likes
 $comments_stmt = $db->prepare("SELECT posts.*, users.username, users.profile_picture,
            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
            EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as user_liked
@@ -68,7 +68,7 @@ $comments = $comments_stmt->fetchAll();
                              class="rounded-circle me-2" width="40" height="40">
                         <div>
                             <h6 class="mb-0"><?php echo htmlspecialchars($post['username']); ?></h6>
-                            <small class="text-muted"><?php echo date('F j, Y, g:i a', strtotime($post['created_at'])); ?></small>
+                            <small class="text-muted"><?php echo formatDateDutch($post['created_at']); ?></small>
                         </div>
                     </div>
                     <?php if($post['user_id'] == $user_id): ?>
@@ -76,7 +76,7 @@ $comments = $comments_stmt->fetchAll();
                             <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                             <input type="hidden" name="delete" value="1">
                             <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je zeker dat je deze post wilt verwijderen?');">
-                                Delete
+                                Verwijderen
                             </button>
                         </form>
                     <?php endif; ?>
@@ -95,7 +95,7 @@ $comments = $comments_stmt->fetchAll();
         </div>
 
         <div class="mt-4">
-            <h6>Replies</h6>
+            <h6>Reacties</h6>
             <?php foreach($comments as $comment): ?>
                 <div class="card mb-2">
                     <div class="card-body">
@@ -105,7 +105,7 @@ $comments = $comments_stmt->fetchAll();
                                      class="rounded-circle me-2" width="30" height="30">
                                 <div>
                                     <strong><?php echo htmlspecialchars($comment['username']); ?></strong>
-                                    <small class="text-muted ms-2"><?php echo date('F j, Y, g:i a', strtotime($comment['created_at'])); ?></small>
+                                    <small class="text-muted ms-2"><?php echo formatDateDutch($comment['created_at']); ?></small>
                                 </div>
                             </div>
                             <?php if($comment['user_id'] == $user_id): ?>
@@ -113,7 +113,7 @@ $comments = $comments_stmt->fetchAll();
                                     <input type="hidden" name="post_id" value="<?php echo $comment['id']; ?>">
                                     <input type="hidden" name="delete" value="1">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je zeker dat je deze reply wilt verwijderen?');">
-                                        Delete
+                                        Verwijderen
                                     </button>
                                 </form>
                             <?php endif; ?>
@@ -125,7 +125,7 @@ $comments = $comments_stmt->fetchAll();
                         <form action="" method="POST" class="d-inline">
                             <input type="hidden" name="post_id" value="<?php echo $comment['id']; ?>">
                             <button type="submit" class="btn btn-sm <?php echo $comment['user_liked'] ? 'btn-danger' : 'btn-outline-danger'; ?>">
-                                Like (<?php echo $comment['like_count']; ?>)
+                                Vind ik leuk (<?php echo $comment['like_count']; ?>)
                             </button>
                         </form>
                     </div>
@@ -134,8 +134,8 @@ $comments = $comments_stmt->fetchAll();
 
             <form action="" method="POST" class="mt-3">
                 <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
-                <textarea name="content" class="form-control mb-2" placeholder="Add a reply..." rows="2" required></textarea>
-                <button type="submit" class="btn btn-primary">Reply</button>
+                <textarea name="content" class="form-control mb-2" placeholder="Voeg een reactie toe..." rows="2" required></textarea>
+                <button type="submit" class="btn btn-primary">Reageer</button>
             </form>
         </div>
     </div>

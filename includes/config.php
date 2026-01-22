@@ -48,7 +48,7 @@ class Database {
         } catch (PDOException $e) {
             $msg = "Prepare fout: " . $e->getMessage() . " SQL: " . $sql;
             error_log($msg);
-            // Temporarily show detailed error for debugging
+            // Tijdelijk gedetailleerde fout tonen voor debugging
             die("Database query fout: " . htmlspecialchars($e->getMessage()));
         }
     }

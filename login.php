@@ -32,10 +32,10 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header("Location: index.php");
                 exit();
             } else {
-                $errors[] = "Invalid email or password";
+                $errors[] = "Ongeldige e-mail of wachtwoord";
             }
         } else {
-            $errors[] = "Invalid email or password";
+            $errors[] = "Ongeldige e-mail of wachtwoord";
         }
     }
 }
@@ -46,7 +46,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Social Media</title>
+    <title>Inloggen - Social Media</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -55,7 +55,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
-                        <h3>Login</h3>
+                        <h3>Inloggen</h3>
                     </div>
                     <div class="card-body">
                         <?php if(!empty($errors)): ?>
@@ -81,8 +81,8 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <label>Password</label>
                                 <input type="password" name="password" class="form-control" required>
                             </div>
-                            <button type="submit" class="btn btn-primary">Login</button>
-                            <a href="register.php" class="btn btn-link">Don't have an account?</a>
+                            <button type="submit" class="btn btn-primary">Inloggen</button>
+                            <a href="register.php" class="btn btn-link">Nog geen account?</a>
                         </form>
                     </div>
                 </div>

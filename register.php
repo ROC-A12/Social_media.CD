@@ -33,7 +33,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $role = 'user';
         $stmt = $db->prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)");
         if($stmt->execute([$username, $email, $hashed_password, $role])) {
-            $_SESSION['success'] = "Registration successful! Please login.";
+            $_SESSION['success'] = "Registratie succesvol! Log in.";
             header("Location: login.php");
             exit();
         }
@@ -46,7 +46,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Social Media</title>
+    <title>Registreren - Social Media</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -55,7 +55,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
-                        <h3>Register</h3>
+                        <h3>Registreren</h3>
                     </div>
                     <div class="card-body">
                         <?php if(!empty($errors)): ?>
@@ -68,23 +68,23 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                         
                         <form method="POST" action="">
                             <div class="mb-3">
-                                <label>Username</label>
+                                <label>Gebruikersnaam</label>
                                 <input type="text" name="username" class="form-control" required>
                             </div>
                             <div class="mb-3">
-                                <label>Email</label>
+                                <label>E-mail</label>
                                 <input type="email" name="email" class="form-control" required>
                             </div>
                             <div class="mb-3">
-                                <label>Password</label>
+                                <label>Wachtwoord</label>
                                 <input type="password" name="password" class="form-control" required>
                             </div>
                             <div class="mb-3">
-                                <label>Confirm Password</label>
+                                <label>Bevestig wachtwoord</label>
                                 <input type="password" name="confirm_password" class="form-control" required>
                             </div>
-                            <button type="submit" class="btn btn-primary">Register</button>
-                            <a href="login.php" class="btn btn-link">Already have an account?</a>
+                            <button type="submit" class="btn btn-primary">Registreren</button>
+                            <a href="login.php" class="btn btn-link">Heb je al een account?</a>
                         </form>
                     </div>
                 </div>

@@ -3,28 +3,28 @@ require_once 'includes/functies.php';
 
 checkLogin();
 
-// Handle delete action
+// Verwijderactie verwerken
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['post_id']) && isset($_POST['delete'])) {
     deletePost((int)$_POST['post_id'], $_SESSION['user_id']);
     header("Location: " . $_SERVER['HTTP_REFERER']);
     exit();
 }
 
-// Handle follow action
+// Volgactie verwerken
 if (isset($_GET['follow'])) {
     toggleFollow($_SESSION['user_id'], (int)$_GET['follow']);
     header("Location: profile.php?id=" . (int)$_GET['follow']);
     exit();
 }
 
-// Handle create post action
+// Nieuw bericht (post) aanmaken verwerken
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['content']) && !isset($_POST['post_id'])) {
     createPost($_SESSION['user_id'], trim($_POST['content']), $_FILES['image'] ?? null);
     header("Location: profile.php?id=" . $_SESSION['user_id']);
     exit();
 }
 
-// Handle update privacy action
+// Privacy-update verwerken
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_privacy'])) {
     if (!verifyCSRFToken($_POST['csrf_token'])) {
         die("CSRF token invalid");
@@ -46,14 +46,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_privacy'])) {
     }
 }
 
-// Handle respond follow request
+// Verzoek tot volgen beantwoorden verwerken
 if (isset($_GET['respond_request']) && isset($_GET['action'])) {
     respondFollowRequest((int)$_GET['respond_request'], $_GET['action'], $_SESSION['user_id']);
     header("Location: profile.php?id=" . $_SESSION['user_id']);
     exit();
 }
 
-// Handle remove follower
+// Volger verwijderen verwerken
 if (isset($_GET['remove_follower'])) {
     removeFollower((int)$_GET['remove_follower'], $_SESSION['user_id']);
     header("Location: profile.php?id=" . $_SESSION['user_id']);
@@ -73,7 +73,7 @@ if (!$user) {
     exit();
 }
 
-// Handle profile picture upload
+// Upload profielfoto verwerken
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && $user_id == $_SESSION['user_id'] && isset($_FILES['profile_picture'])) {
     if (!verifyCSRFToken($_POST['csrf_token'])) {
         die("CSRF token invalid");
@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $user_id == $_SESSION['user_id'] && 
     }
 }
 
-// Handle bio update
+// Bio-update verwerken
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && $user_id == $_SESSION['user_id'] && isset($_POST['bio'])) {
     if (!verifyCSRFToken($_POST['csrf_token'])) {
         die("CSRF token invalid");
@@ -113,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $user_id == $_SESSION['user_id'] && 
     exit();
 }
 
-// Follow logica & Tellers
+// Volglogica & tellers
 $is_following = false;
 $has_pending_request = false;
 if ($user_id != $_SESSION['user_id']) {
@@ -149,7 +149,7 @@ if ($can_view_posts) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($user['username']); ?> - Profile</title>
+    <title><?php echo htmlspecialchars($user['username']); ?> - Profiel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
@@ -263,7 +263,7 @@ if ($can_view_posts) {
                     </div>
                 <?php endif; ?>
 
-                <h3 class="mb-4">Posts</h3>
+                <h3 class="mb-4">Berichten</h3>
                 <?php if($can_view_posts): ?>
                     <?php if(!empty($posts)): ?>
                         <?php foreach($posts as $post): ?>
@@ -274,14 +274,14 @@ if ($can_view_posts) {
                                             <img src="assets/uploads/profile_pictures/<?php echo $user['profile_picture'] ?: 'default.png'; ?>" class="rounded-circle me-2" width="40" height="40" style="object-fit: cover;">
                                             <div>
                                                 <h6 class="mb-0"><?php echo htmlspecialchars($user['username']); ?></h6>
-                                                <small class="text-muted"><?php echo date('d-m-Y H:i', strtotime($post['created_at'])); ?></small>
+                                                <small class="text-muted"><?php echo formatDateDutch($post['created_at']); ?></small>
                                             </div>
                                         </div>
                                         <?php if($post['user_id'] == $_SESSION['user_id']): ?>
                                             <form action="" method="POST">
                                                 <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                                                 <input type="hidden" name="delete" value="1">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Verwijderen?');">Delete</button>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je het zeker?');">Verwijderen</button>
                                             </form>
                                         <?php endif; ?>
                                     </div>
@@ -292,12 +292,12 @@ if ($can_view_posts) {
                                 </div>
                             </div>
                         <?php endforeach; ?>
-                    <?php else: echo '<div class="alert alert-info">Nog geen posts.</div>'; endif; ?>
+                    <?php else: echo '<div class="alert alert-info">Nog geen berichten.</div>'; endif; ?>
                 <?php else: ?>
                     <div class="card bg-light text-center p-5 shadow-sm">
                         <i class="fas fa-lock fa-3x mb-3 text-muted"></i>
                         <h5>Dit account is privé</h5>
-                        <p class="text-muted">Volg deze persoon om hun posts te zien.</p>
+                        <p class="text-muted">Volg deze persoon om hun berichten te zien.</p>
                     </div>
                 <?php endif; ?>
             </div>

@@ -45,7 +45,7 @@ if (!isset($_SESSION['user_id']) && !in_array($current_page, $excluded_pages)) {
             <?php if(isset($_SESSION['user_id'])): ?>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="index.php">
-                    <i class="fas fa-home"></i> Home
+                    <i class="fas fa-home"></i> Startpagina
                 </a>
                 <a class="nav-link" href="profile.php?id=<?php echo $_SESSION['user_id']; ?>">
                     <i class="fas fa-user"></i> Profiel
