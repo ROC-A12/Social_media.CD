@@ -1,12 +1,16 @@
 <?php
 require_once 'includes/functies.php';
 
+// Direct messages (DM) pagina
+// - Links: gesprekkenlijst
+// - Rechts: chat met geselecteerde gebruiker
+// Verwerkt ook het verzenden van nieuwe berichten via POST
 checkLogin();
 
 $db = getDB();
 $user_id = $_SESSION['user_id'];
 
-// Verzendbericht verwerken
+// Verzendbericht verwerken: controleer CSRF en valideer ontvanger
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recipient_id']) && isset($_POST['content'])) {
     if (!verifyCSRFToken($_POST['csrf_token'])) {
         die('CSRF token invalid');

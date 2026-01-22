@@ -2,22 +2,25 @@
 include_once 'config.php';
 
 
+// ini_set('display_errors', 1);
+// error_reporting(E_ALL);
 
-// Beveiliging - foutmeldingen uitzetten in productie
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
+/**
+ * Controleer login
+ * - Redirect naar `login.php` als er geen actieve gebruiker is
+ */
 function checkLogin() {
+    // Zorg dat er een geldige sessie is; anders doorsturen naar inloggen
     if(!isset($_SESSION['user_id'])) {
         header("Location: login.php");
         exit();
     }
 }
 
-function isAdmin() {
-    return isset($_SESSION['is_admin']) && $_SESSION['is_admin'];
-}
-
+/**
+ * Sanitize input
+ * - Verwijdert onnodige whitespace en escapt speciale tekens
+ */
 function sanitizeInput($input) {
     $input = trim($input);
     $input = stripslashes($input);
@@ -25,10 +28,20 @@ function sanitizeInput($input) {
     return $input;
 }
 
+// Validatie- en helperfuncties hierboven: gebruik deze voor alle gebruikersinvoer
+
+/**
+ * E-mail validatie
+ * - Retourneert gefilterde waarde of false
+ */
 function validateEmail($email) {
     return filter_var($email, FILTER_VALIDATE_EMAIL);
 }
 
+/**
+ * Valideer afbeelding
+ * - Controleert MIME-type en maximale bestandsgrootte
+ */
 function validateImage($file) {
     $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
     $max_size = 5 * 1024 * 1024; // 5MB
@@ -44,6 +57,10 @@ function validateImage($file) {
     return true;
 }
 
+/**
+ * Genereer CSRF-token
+ * - Bewaart token in sessie en retourneert deze
+ */
 function generateCSRFToken() {
     if(!isset($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -51,10 +68,19 @@ function generateCSRFToken() {
     return $_SESSION['csrf_token'];
 }
 
+/**
+ * Verifieer CSRF-token
+ * - Beveiliging tegen CSRF door vergelijking met sessie-token
+ */
 function verifyCSRFToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
+/**
+ * Formatteer datum in Nederlands
+ * - `short=true` geeft korte notatie (bv. "21 jan 14:26")
+ * - `short=false` geeft lange notatie (bv. "21 januari 2026, 14:26")
+ */
 function formatDateDutch($datetime, $short = true) {
     if (empty($datetime)) return '';
     try {
@@ -97,10 +123,14 @@ function formatDateDutch($datetime, $short = true) {
     }
 }
 
+/**
+ * Toggle like
+ * - Voegt een like toe of verwijdert deze als al geliked
+ */
 function toggleLike($post_id, $user_id) {
     $db = getDB();
     
-    // Controleer of al geliked
+    // Controleer of de gebruiker het bericht al geliked heeft
     $check_stmt = $db->prepare("SELECT id FROM likes WHERE user_id = ? AND post_id = ?");
     $check_stmt->execute([$user_id, $post_id]);
 
@@ -115,12 +145,17 @@ function toggleLike($post_id, $user_id) {
     }
 }
 
+/**
+ * Toggle follow
+ * - Volg of ontvolg een gebruiker
+ * - Bij privé-accounts wordt een follow_request aangemaakt
+ */
 function toggleFollow($follower_id, $following_id) {
     $db = getDB();
     
     if ($following_id == $follower_id) return;
     
-    // Controleer of al gevolgd
+    // Controleer of de relatie al bestaat (volgen/ontvolgen)
     $check_stmt = $db->prepare("SELECT id FROM follows WHERE follower_id = ? AND following_id = ?");
     $check_stmt->execute([$follower_id, $following_id]);
 
@@ -129,7 +164,7 @@ function toggleFollow($follower_id, $following_id) {
         $delete_stmt = $db->prepare("DELETE FROM follows WHERE follower_id = ? AND following_id = ?");
         $delete_stmt->execute([$follower_id, $following_id]);
     } else {
-        // Controleer of account privé is
+        // Controleer of de doelgebruiker een privé-account heeft
         $user_stmt = $db->prepare("SELECT is_private FROM users WHERE id = ?");
         $user_stmt->execute([$following_id]);
         $user_data = $user_stmt->fetch();
@@ -140,7 +175,7 @@ function toggleFollow($follower_id, $following_id) {
             $req_check->execute([$follower_id, $following_id]);
             
             if ($req_check->rowCount() == 0) {
-                // Verstuur nieuw verzoek
+                // Verstuur nieuw follow-verzoek (status = pending)
                 $req_stmt = $db->prepare("INSERT INTO follow_requests (requester_id, recipient_id, status) VALUES (?, ?, ?)");
                 $req_stmt->execute([$follower_id, $following_id, 'pending']);
             }
@@ -152,10 +187,14 @@ function toggleFollow($follower_id, $following_id) {
     }
 }
 
+/**
+ * Verwijder post
+ * - Controleert eigendom en verwijdert post + gerelateerde likes/reacties
+ */
 function deletePost($post_id, $user_id) {
     $db = getDB();
     
-    // Controleer eigendom
+    // Controleer of de ingelogde gebruiker eigenaar is van de post
     $stmt = $db->prepare("SELECT user_id FROM posts WHERE id = ?");
     $stmt->execute([$post_id]);
     $post = $stmt->fetch();
@@ -164,17 +203,22 @@ function deletePost($post_id, $user_id) {
         return false;
     }
 
-    // Verwijder likes en reacties
+    // Verwijder alle gekoppelde likes en reacties bij deze post
     $db->query("DELETE FROM likes WHERE post_id = ? OR post_id IN (SELECT id FROM posts WHERE posts_id = ?)", [$post_id, $post_id]);
     $db->query("DELETE FROM posts WHERE id = ? OR posts_id = ?", [$post_id, $post_id]);
     
     return true;
 }
 
+/**
+ * Voeg reactie toe
+ * - Slaat reactie op als `posts` record met `posts_id` verwijzing
+ */
 function addComment($post_id, $user_id, $content) {
     $db = getDB();
     
     if (!empty($content)) {
+        // Voeg reply toe als een post met posts_id verwijzing
         $stmt = $db->prepare("INSERT INTO posts (user_id, posts_id, content) VALUES (?, ?, ?)");
         $stmt->execute([$user_id, $post_id, $content]);
         return true;
@@ -182,6 +226,10 @@ function addComment($post_id, $user_id, $content) {
     return false;
 }
 
+/**
+ * Maak nieuwe post
+ * - Ondersteunt optionele afbeelding upload
+ */
 function createPost($user_id, $content, $image_file = null) {
     $db = getDB();
     
@@ -211,6 +259,10 @@ function createPost($user_id, $content, $image_file = null) {
     return false;
 }
 
+/**
+ * Update privacy-instelling
+ * - Zet profiel op privé (1) of openbaar (0)
+ */
 function updatePrivacy($user_id, $is_private) {
     $db = getDB();
     
@@ -218,6 +270,10 @@ function updatePrivacy($user_id, $is_private) {
     $stmt->execute([$is_private, $user_id]);
 }
 
+/**
+ * Behandel follow-verzoek
+ * - Accepteer of weiger verzoek en werk data bij
+ */
 function respondFollowRequest($request_id, $action, $recipient_id) {
     $db = getDB();
     
@@ -236,6 +292,10 @@ function respondFollowRequest($request_id, $action, $recipient_id) {
     }
 }
 
+/**
+ * Verwijder volger
+ * - Verwijdert een follower record voor deze gebruiker
+ */
 function removeFollower($follower_id, $my_id) {
     $db = getDB();
     
@@ -244,12 +304,20 @@ function removeFollower($follower_id, $my_id) {
 }
 
 // --- Functies voor directe berichten ---
+/**
+ * Verstuur bericht
+ * - Slaat een nieuw chatbericht op tussen twee gebruikers
+ */
 function sendMessage($from_id, $to_id, $content) {
     $db = getDB();
     $stmt = $db->prepare("INSERT INTO messages (sender_id, recipient_id, content) VALUES (?, ?, ?)");
     $stmt->execute([$from_id, $to_id, $content]);
 }
 
+/**
+ * Haal gesprekken op
+ * - Geeft een lijst met gesprekspartners, laatste bericht en ongelezen aantal
+ */
 function getConversations($user_id) {
     $db = getDB();
     $partners_stmt = $db->prepare("SELECT DISTINCT IF(sender_id = ?, recipient_id, sender_id) AS partner_id FROM messages WHERE sender_id = ? OR recipient_id = ?");
@@ -285,6 +353,10 @@ function getConversations($user_id) {
     return $result;
 }
 
+/**
+ * Haal berichten tussen twee gebruikers
+ * - Retourneert alle berichten chronologisch
+ */
 function getMessagesBetween($user1, $user2) {
     $db = getDB();
     $stmt = $db->prepare("SELECT m.*, u.username, u.profile_picture FROM messages m JOIN users u ON u.id = m.sender_id WHERE (m.sender_id = ? AND m.recipient_id = ?) OR (m.sender_id = ? AND m.recipient_id = ?) ORDER BY m.created_at ASC");
@@ -292,6 +364,10 @@ function getMessagesBetween($user1, $user2) {
     return $stmt->fetchAll();
 }
 
+/**
+ * Markeer berichten als gelezen
+ * - Zet `is_read` voor berichten van `from_id` naar `to_id`
+ */
 function markMessagesRead($from_id, $to_id) {
     $db = getDB();
     $stmt = $db->prepare("UPDATE messages SET is_read = 1 WHERE sender_id = ? AND recipient_id = ?");

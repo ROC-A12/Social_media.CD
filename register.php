@@ -1,6 +1,8 @@
 <?php
 require_once 'includes/functies.php';
 
+// Registratiepagina
+// Verwerkt gebruikersaanmelding, validatie en aanmaken van nieuwe gebruiker
 $db = getDB();
 
 if($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -9,7 +11,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
     
-    // Validatie
+    // Valideer formuliervelden en bouw foutarray op
     $errors = [];
     
     if(empty($username)) $errors[] = "Username is required";

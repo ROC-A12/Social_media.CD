@@ -1,6 +1,12 @@
 <?php
 require_once 'includes/functies.php';
 
+/**
+ * Hulpscript voor aanpassen van database (schema migratie)
+ * Gebruik dit script éénmalig om kolommen toe te voegen aan de `posts` tabel
+ * (bijvoorbeeld tijdens ontwikkeling of bij upgrades).
+ */
+
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 $conn->set_charset(DB_CHARSET);
 
@@ -8,7 +14,7 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Controleer of kolom image_url bestaat
+// Controleer of kolom image_url bestaat (voeg toe als ontbreekt)
 $result = $conn->query("SHOW COLUMNS FROM posts LIKE 'image_url'");
 
 if ($result->num_rows == 0) {

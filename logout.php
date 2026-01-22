@@ -1,7 +1,8 @@
 <?php
 require_once 'includes/functies.php';
 
-// Sessie vernietigen
+// Uitloggen: sessie vernietigen en terug naar de inlogpagina
+// Zorg dat alle sessiegegevens verwijderd worden
 session_destroy();
 
 // Redirect naar login

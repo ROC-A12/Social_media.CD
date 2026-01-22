@@ -1,6 +1,8 @@
 <?php
 require_once 'includes/functies.php';
 
+// Zoekpagina voor gebruikers
+// Simpele LIKE-zoekopdracht op gebruikersnaam (limiet 20 resultaten)
 checkLogin();
 
 $db = getDB();
@@ -8,6 +10,7 @@ $query = isset($_GET['q']) ? trim($_GET['q']) : '';
 
 $users = [];
 if (!empty($query)) {
+    // Bereid zoekquery voor en gebruik wildcard
     $stmt = $db->prepare("SELECT id, username, profile_picture FROM users WHERE username LIKE ? LIMIT 20");
     $search = "%$query%";
     $stmt->execute([$search]);

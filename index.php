@@ -1,6 +1,9 @@
 <?php
 require_once 'includes/functies.php';
 
+// Startpagina (feed)
+// - Toont recente berichten waarvoor de ingelogde gebruiker leesrechten heeft
+// - Verwerkt likes, verwijderacties en follow-links
 checkLogin();
 
 // Verwerk likes en verwijderacties
@@ -28,7 +31,9 @@ if (isset($_GET['follow'])) {
 $db = getDB();
 $user_id = $_SESSION['user_id'];
 
-// SQL Query met privacy filter (PDO)
+// SQL-query: haal posts op met privacy-filter
+// Voorwaarde: toon alleen top-level posts (posts_id IS NULL) en
+// respecteer privé-accounts tenzij de ingelogde gebruiker mag meekijken
 $sql = "
     SELECT posts.*, users.username, users.profile_picture,
            (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,

@@ -1,6 +1,9 @@
 <?php
 require_once 'includes/functies.php';
 
+// Profielpagina
+// - Toont gebruikersinformatie, posts en biedt acties zoals volgen,
+//   privacy-instellingen, profielfoto upload en biografie-update.
 checkLogin();
 
 // Verwijderactie verwerken
@@ -24,6 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['content']) && !isset($
     exit();
 }
 
+// Privacy-instelling togglen: zet profiel op privé/zichtbaar en bewaar in DB
+// Controle op CSRF-token wordt gedaan voordat update uitgevoerd wordt
 // Privacy-update verwerken
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_privacy'])) {
     if (!verifyCSRFToken($_POST['csrf_token'])) {

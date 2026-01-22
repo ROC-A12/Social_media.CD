@@ -1,10 +1,13 @@
 <?php
 require_once 'includes/functies.php';
 
+// Pagina voor een enkel bericht + reacties
+// Verwerkt: verwijderen, reacties plaatsen en likes
 checkLogin();
 
 // Verwerk likes en reacties
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Behandel formulieracties voor dit bericht
     if (isset($_POST['post_id'])) {
         if (isset($_POST['delete'])) {
             deletePost((int)$_POST['post_id'], $_SESSION['user_id']);

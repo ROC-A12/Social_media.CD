@@ -1,13 +1,15 @@
 <?php
 require_once 'includes/functies.php';
 
+// Inlogpagina
+// Validatie van credentials en initiatie van gebruikerssessie
 $db = getDB();
 
 if($_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
     
-    // Validatie
+    // Valideer invoer en verzamel eventuele foutmeldingen
     $errors = [];
     
     if(empty($email)) $errors[] = "Email is required";

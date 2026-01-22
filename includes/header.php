@@ -1,4 +1,9 @@
 <?php
+/**
+ * Gedeelde header en navigatie
+ * Zorgt dat sessies gestart zijn en redirect naar login als gebruiker
+ * niet ingelogd is (behalve op pagina's die expliciet uitgesloten zijn).
+ */
 // Start sessie als deze nog niet gestart is
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -32,7 +37,7 @@ if (!isset($_SESSION['user_id']) && !in_array($current_page, $excluded_pages)) {
     <!-- Custom CSS -->
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>css/style.css">
     
-    <!-- CSRF Token voor formulieren -->
+    <!-- CSRF token voor formulieren: gebruik generateCSRFToken() in forms -->
     <meta name="csrf-token" content="<?php echo generateCSRFToken(); ?>">
 </head>
 <body>
